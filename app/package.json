@@ -5,12 +5,15 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --mac",
-    "build:arm64": "electron-builder --mac --arm64",
-    "build:x64": "electron-builder --mac --x64"
+    "build": "electron-builder --mac --universal",
+    "build:dir": "electron-builder --mac --universal --dir"
   },
   "author": "unclecode",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unclecode/xnote.git"
+  },
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0"
@@ -21,12 +24,13 @@
   "build": {
     "appId": "com.unclecode.xnote",
     "productName": "xnote",
+    "artifactName": "${productName}-${version}-mac-universal.${ext}",
     "mac": {
       "category": "public.app-category.productivity",
       "target": [
         {
-          "target": "default",
-          "arch": ["arm64", "x64"]
+          "target": "zip",
+          "arch": "universal"
         }
       ],
       "extendInfo": {
@@ -38,6 +42,11 @@
       "preload.js",
       "index.html",
       "assets/**/*"
-    ]
+    ],
+    "publish": {
+      "provider": "github",
+      "owner": "unclecode",
+      "repo": "xnote"
+    }
   }
 }

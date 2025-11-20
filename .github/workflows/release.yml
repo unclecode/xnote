@@ -1,0 +1,84 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: npm ci
+
+      - name: Build app
+        working-directory: ./app
+        run: npm run build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: app/dist/xnote-${{ steps.version.outputs.VERSION }}-mac-universal.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Homebrew Cask
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          ZIP_FILE="app/dist/xnote-${VERSION}-mac-universal.zip"
+          SHA256=$(shasum -a 256 "$ZIP_FILE" | awk '{print $1}')
+
+          git clone https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/unclecode/homebrew-xnote.git /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+
+          cat > Casks/xnote.rb << EOF
+          cask "xnote" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+
+            url "https://github.com/unclecode/xnote/releases/download/v#{version}/xnote-#{version}-mac-universal.zip"
+            name "xnote"
+            desc "Minimalist note-taking app for macOS"
+            homepage "https://github.com/unclecode/xnote"
+
+            app "xnote.app"
+
+            postflight do
+              system_command "/usr/bin/xattr",
+                             args: ["-cr", "#{appdir}/xnote.app"],
+                             sudo: false
+            end
+
+            zap trash: [
+              "~/.xnote",
+            ]
+          end
+          EOF
+
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add Casks/xnote.rb
+          git commit -m "Update xnote to v${VERSION}"
+          git push
