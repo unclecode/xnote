@@ -43,10 +43,6 @@
       "index.html",
       "assets/**/*"
     ],
-    "publish": {
-      "provider": "github",
-      "owner": "unclecode",
-      "repo": "xnote"
-    }
+    "publish": null
   }
 }
