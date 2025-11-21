@@ -51,6 +51,7 @@ function createWindow() {
     transparent: false,
     resizable: true,
     skipTaskbar: true,
+    visibleOnAllWorkspaces: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -59,6 +60,9 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
+
+  // Make window appear on all workspaces/desktops
+  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   // Save window position on move/resize
   mainWindow.on('resize', () => {
