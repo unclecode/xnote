@@ -996,6 +996,34 @@
         background: rgba(255, 0, 0, 0.8);
       }
 
+      /* Selection Start Chat Button */
+      .selection-start-chat-btn {
+        position: absolute;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        transition: all 0.2s ease;
+      }
+
+      .selection-start-chat-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .selection-start-chat-btn.visible {
+        display: flex;
+      }
+
       .ai-mode-toggle-wrapper {
         display: flex;
         gap: 0;
@@ -2035,6 +2063,12 @@ Type markdown here, preview on the right updates as you type."
       </div>
     </div>
 
+    <!-- Selection Start Chat Button -->
+    <button id="selection-start-chat-btn" class="selection-start-chat-btn">
+      <i data-lucide="message-circle" width="16" height="16"></i>
+      <span>Start Chat</span>
+    </button>
+
     <!-- AI Floating Input -->
     <div id="ai-floating-input" class="ai-floating-input">
       <div class="ai-input-header">
@@ -2904,6 +2938,56 @@ Type markdown here, preview on the right updates as you type."
         aiModeReplaceBtn.classList.remove('is-active');
       });
 
+      // Selection Start Chat Button
+      const selectionStartChatBtn = document.getElementById('selection-start-chat-btn');
+      let selectionChatText = '';
+
+      // Show button on text selection
+      document.addEventListener('mouseup', () => {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+
+        if (selectedText && selectedText.length > 0) {
+          selectionChatText = selectedText;
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+
+          // Position button above selection
+          selectionStartChatBtn.style.left = `${rect.left + rect.width / 2 - 50}px`;
+          selectionStartChatBtn.style.top = `${rect.top - 45}px`;
+          selectionStartChatBtn.classList.add('visible');
+        } else {
+          selectionStartChatBtn.classList.remove('visible');
+        }
+      });
+
+      // Handle Start Chat button click
+      selectionStartChatBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectionStartChatBtn.classList.remove('visible');
+
+        // Pre-populate chat with selected text and LOCK it
+        chatSelectedText = selectionChatText;
+        chatSelectionLocked = true; // Prevent polling from clearing this
+
+        // Open chat sidebar
+        if (!chatSidebar.classList.contains('visible')) {
+          toggleChatSidebar();
+        }
+
+        // Show context in chat - needs to be done after sidebar opens
+        setTimeout(() => {
+          if (chatSelectedText) {
+            chatContextContent.textContent = chatSelectedText;
+            chatSelectionContext.classList.add('has-selection');
+          }
+          // Focus chat input
+          chatInput.focus();
+        }, 100);
+      });
+
       // Image paste support
       aiPromptInput.addEventListener('paste', async (e) => {
         const items = e.clipboardData.items;
@@ -3366,6 +3450,7 @@ Type markdown here, preview on the right updates as you type."
       let chatSelectionStart = null;
       let chatSelectionEnd = null;
       let chatSelectionMode = null;
+      let chatSelectionLocked = false; // Prevent polling from clearing manually set selection
       let isChatGenerating = false;
       let chatImages = [];
 
@@ -3460,6 +3545,11 @@ Type markdown here, preview on the right updates as you type."
 
       // Capture selection for chat context
       function captureChatSelection() {
+        // Don't clear if selection is locked (manually set from Start Chat button)
+        if (chatSelectionLocked) {
+          return;
+        }
+
         const currentMode = rich.classList.contains('hidden') ? 'md' : 'rich';
 
         if (currentMode === 'rich') {
@@ -3500,6 +3590,7 @@ Type markdown here, preview on the right updates as you type."
         chatSelectionStart = null;
         chatSelectionEnd = null;
         chatSelectionMode = null;
+        chatSelectionLocked = false; // Unlock when manually cleared
         chatContextContent.textContent = '';
         chatSelectionContext.classList.remove('has-selection');
       }
