@@ -2,7 +2,7 @@
 
 # xnote CLI - Manage xnote as a background service
 
-APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+APP_DIR="/Users/unclecode/devs/xnote/app"
 PID_FILE="$HOME/.xnote/xnote.pid"
 LOG_FILE="$HOME/.xnote/xnote.log"
 
