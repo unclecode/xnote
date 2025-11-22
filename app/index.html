@@ -2723,6 +2723,13 @@ Type markdown here, preview on the right updates as you type."
       let savedCursorRange = null; // For rich mode
       let savedCursorPosition = null; // For markdown mode
 
+      // UI State save timer
+      let uiStateSaveTimer = null;
+      function scheduleUIStateSave() {
+        if (uiStateSaveTimer) clearTimeout(uiStateSaveTimer);
+        uiStateSaveTimer = setTimeout(saveUIState, 500); // Debounce 500ms
+      }
+
       // Toast notification
       function showToast(message, duration = 3000) {
         const toast = document.createElement('div');
@@ -2930,13 +2937,21 @@ Type markdown here, preview on the right updates as you type."
         aiInsertMode = false;
         aiModeReplaceBtn.classList.add('is-active');
         aiModeInsertBtn.classList.remove('is-active');
+        scheduleUIStateSave();
       });
 
       aiModeInsertBtn.addEventListener('click', () => {
         aiInsertMode = true;
         aiModeInsertBtn.classList.add('is-active');
         aiModeReplaceBtn.classList.remove('is-active');
+        scheduleUIStateSave();
       });
+
+      // Auto-save UI state on changes (for elements already defined)
+      aiModelSelector.addEventListener('change', scheduleUIStateSave);
+      aiPromptInput.addEventListener('input', scheduleUIStateSave);
+      rich.addEventListener('scroll', scheduleUIStateSave);
+      mdInput.addEventListener('scroll', scheduleUIStateSave);
 
       // Selection Start Chat Button
       const selectionStartChatBtn = document.getElementById('selection-start-chat-btn');
@@ -3421,9 +3436,118 @@ Type markdown here, preview on the right updates as you type."
         }
       });
 
+      // UI State Persistence
+      async function saveUIState() {
+        if (!isElectron) return;
+
+        const state = {
+          models: {
+            floating: aiModelSelector.value,
+            chat: chatModelSelector.value
+          },
+          modes: {
+            insert: aiInsertMode,
+            editor: rich.classList.contains('hidden') ? 'markdown' : 'rich'
+          },
+          visibility: {
+            chatSidebar: chatSidebar.classList.contains('visible'),
+            floatingInput: aiFloatingInput.classList.contains('visible')
+          },
+          inputs: {
+            floatingPrompt: aiPromptInput.value,
+            chatPrompt: chatInput.value
+          },
+          scroll: {
+            rich: rich.scrollTop,
+            markdown: mdInput.scrollTop,
+            chat: chatMessagesDiv.scrollTop
+          },
+          cursor: {
+            markdown: {
+              start: mdInput.selectionStart,
+              end: mdInput.selectionEnd
+            }
+          },
+          chat: {
+            includeNote: chatIncludeNoteCheckbox?.checked || false
+          }
+        };
+
+        try {
+          await window.electronAPI.saveUIState(state);
+        } catch (err) {
+          console.error('Failed to save UI state:', err);
+        }
+      }
+
+      async function loadUIState() {
+        if (!isElectron) return;
+
+        try {
+          const state = await window.electronAPI.getUIState();
+          if (!state) return;
+
+          // Restore models
+          if (state.models) {
+            if (state.models.floating) aiModelSelector.value = state.models.floating;
+            if (state.models.chat) chatModelSelector.value = state.models.chat;
+          }
+
+          // Restore modes
+          if (state.modes) {
+            if (typeof state.modes.insert === 'boolean') {
+              aiInsertMode = state.modes.insert;
+              if (aiInsertMode) {
+                aiModeInsertBtn.classList.add('is-active');
+                aiModeReplaceBtn.classList.remove('is-active');
+              } else {
+                aiModeReplaceBtn.classList.add('is-active');
+                aiModeInsertBtn.classList.remove('is-active');
+              }
+            }
+          }
+
+          // Restore inputs
+          if (state.inputs) {
+            if (state.inputs.floatingPrompt) aiPromptInput.value = state.inputs.floatingPrompt;
+            if (state.inputs.chatPrompt) chatInput.value = state.inputs.chatPrompt;
+          }
+
+          // Restore chat sidebar visibility
+          if (state.visibility?.chatSidebar) {
+            chatSidebar.classList.add('visible');
+            startChatSelectionMonitoring();
+          }
+
+          // Restore scroll positions (after content loads)
+          setTimeout(() => {
+            if (state.scroll) {
+              if (state.scroll.rich) rich.scrollTop = state.scroll.rich;
+              if (state.scroll.markdown) mdInput.scrollTop = state.scroll.markdown;
+              if (state.scroll.chat) chatMessagesDiv.scrollTop = state.scroll.chat;
+            }
+
+            // Restore cursor position
+            if (state.cursor?.markdown) {
+              mdInput.selectionStart = state.cursor.markdown.start;
+              mdInput.selectionEnd = state.cursor.markdown.end;
+            }
+          }, 100);
+
+          // Restore chat settings
+          if (state.chat?.includeNote && chatIncludeNoteCheckbox) {
+            chatIncludeNoteCheckbox.checked = true;
+          }
+
+        } catch (err) {
+          console.error('Failed to load UI state:', err);
+        }
+      }
+
       // Initialize AI settings on load
       if (isElectron) {
         loadAISettings();
+        loadUIState(); // Load UI state
 
         // Listen for image chunks from AI generation
         window.electronAPI.onImageChunk((imageData) => {
@@ -3462,6 +3586,11 @@ Type markdown here, preview on the right updates as you type."
       const chatModelSelector = document.getElementById('chat-model-selector');
       const chatCloseBtn = document.getElementById('chat-close-btn');
       const chatNewBtn = document.getElementById('chat-new-btn');
+
+      // Auto-save UI state for chat elements (now that they're defined)
+      chatModelSelector.addEventListener('change', scheduleUIStateSave);
+      chatInput.addEventListener('input', scheduleUIStateSave);
+      chatMessagesContainer.addEventListener('scroll', scheduleUIStateSave);
       const chatHistoryBtn = document.getElementById('chat-history-btn');
       const chatHistoryPanel = document.getElementById('chat-history-panel');
       const chatHistoryCloseBtn = document.getElementById('chat-history-close-btn');
@@ -3512,6 +3641,7 @@ Type markdown here, preview on the right updates as you type."
         }, 100);
 
         chatInput.focus();
+        scheduleUIStateSave();
       }
 
       function closeChatSidebar() {
@@ -3520,6 +3650,8 @@ Type markdown here, preview on the right updates as you type."
 
         // Stop monitoring selection changes
         stopSelectionMonitoring();
+
+        scheduleUIStateSave();
       }
 
       // Selection monitoring for chat

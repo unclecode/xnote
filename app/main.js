@@ -372,6 +372,29 @@ ipcMain.handle('ai-get-settings', async () => {
   }
 });
 
+// UI State persistence
+ipcMain.handle('save-ui-state', async (event, uiState) => {
+  try {
+    const data = loadData();
+    data.uiState = uiState;
+    saveData(data);
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving UI state:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-ui-state', async () => {
+  try {
+    const data = loadData();
+    return data.uiState || null;
+  } catch (error) {
+    console.error('Error getting UI state:', error);
+    return null;
+  }
+});
+
 // App lifecycle
 app.whenReady().then(() => {
   // Hide dock icon
