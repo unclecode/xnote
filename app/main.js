@@ -226,9 +226,6 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
     const data = loadData();
     const systemPrompt = data.aiSettings?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
 
-    // Create model instance
-    const geminiModel = genAI.getGenerativeModel({ model });
-
     // Prepare parts for the request
     const parts = [{ text: `${systemPrompt}\n\nCurrent note:\n${content}` }];
 
@@ -244,8 +241,9 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
       }
     }
 
-    // Generate content with streaming
-    const result = await geminiModel.generateContentStream({
+    // Generate content with streaming using correct API
+    const response = await genAI.models.generateContentStream({
+      model: model,
       contents: [{
         role: 'user',
         parts: parts
@@ -254,11 +252,13 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
 
     // Stream response back to renderer
     let fullText = '';
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      fullText += chunkText;
-      // Send chunk to renderer
-      event.sender.send('ai-content-chunk', chunkText);
+    for await (const chunk of response) {
+      const chunkText = chunk.text;
+      if (chunkText) {
+        fullText += chunkText;
+        // Send chunk to renderer
+        event.sender.send('ai-content-chunk', chunkText);
+      }
     }
 
     // Extract content from <result> tags

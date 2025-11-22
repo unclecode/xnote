@@ -236,6 +236,7 @@
         overflow: auto;
       }
 
+
       #rich-editor[contenteditable="true"]::before {
         content: attr(data-placeholder);
         position: absolute;
@@ -943,10 +944,15 @@
         font-size: 13px;
         font-weight: 500;
         cursor: pointer;
-        transition: opacity 0.15s ease;
+        transition: all 0.3s ease;
         opacity: 0;
         max-height: 0;
         overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        position: relative;
       }
 
       .ai-send-btn.visible {
@@ -954,39 +960,77 @@
         max-height: 50px;
       }
 
-      .ai-send-btn:hover:not(:disabled) {
-        opacity: 0.9;
+      .ai-send-btn:hover:not(:disabled):not(.generating) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
       }
 
       .ai-send-btn:disabled {
-        opacity: 0.5;
+        opacity: 0.7;
         cursor: not-allowed;
+      }
+
+      /* Generating state */
+      .ai-send-btn.generating {
+        background: #e74c3c;
+        cursor: pointer;
+      }
+
+      .ai-send-btn.generating:hover {
+        background: #c0392b;
+      }
+
+      /* Loading spinner */
+      .ai-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: none;
+      }
+
+      .ai-send-btn.generating .ai-spinner {
+        display: block;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .ai-btn-text {
+        transition: opacity 0.2s ease;
       }
 
       /* Header glow animation for AI processing */
       @keyframes header-glow {
         0%, 100% {
           background: rgba(4, 6, 18, 0.96);
+          border-bottom-color: rgba(255, 255, 255, 0.06);
         }
         50% {
-          background: rgba(79, 140, 255, 0.15);
+          background: rgba(79, 140, 255, 0.4);
+          border-bottom-color: rgba(79, 140, 255, 0.6);
         }
       }
 
       .toolbar.ai-generating {
-        animation: header-glow 2s ease-in-out infinite;
+        animation: header-glow 1.5s ease-in-out infinite !important;
       }
 
       :root[data-theme="light"] .toolbar.ai-generating {
-        animation: header-glow-light 2s ease-in-out infinite;
+        animation: header-glow-light 1.5s ease-in-out infinite !important;
       }
 
       @keyframes header-glow-light {
         0%, 100% {
           background: rgba(245, 240, 230, 0.98);
+          border-bottom-color: rgba(0, 0, 0, 0.08);
         }
         50% {
-          background: rgba(139, 105, 20, 0.15);
+          background: rgba(139, 105, 20, 0.35);
+          border-bottom-color: rgba(139, 105, 20, 0.5);
         }
       }
 
@@ -1236,7 +1280,10 @@ Type markdown here, preview on the right updates as you type."
       </div>
       <div id="ai-image-thumbnails" class="ai-image-thumbnails"></div>
       <textarea id="ai-prompt-input" class="ai-prompt-input" placeholder="Ask AI to help with your note..." rows="1"></textarea>
-      <button id="ai-send-btn" class="ai-send-btn">Generate →</button>
+      <button id="ai-send-btn" class="ai-send-btn">
+        <div class="ai-spinner"></div>
+        <span class="ai-btn-text">Generate →</span>
+      </button>
     </div>
 
     <script
@@ -1831,9 +1878,13 @@ Type markdown here, preview on the right updates as you type."
       const aiCloseBtn = document.getElementById('ai-close-btn');
       const aiPromptInput = document.getElementById('ai-prompt-input');
       const aiSendBtn = document.getElementById('ai-send-btn');
+      const aiSendBtnText = aiSendBtn.querySelector('.ai-btn-text');
       const aiImageThumbnails = document.getElementById('ai-image-thumbnails');
 
       const toolbar = document.querySelector('.toolbar');
+
+      // AI generation control
+      let aiGenerationAborted = false;
 
       // Toast notification
       function showToast(message, duration = 3000) {
@@ -1927,7 +1978,9 @@ Type markdown here, preview on the right updates as you type."
       function closeAIFloatingInput() {
         aiFloatingInput.classList.remove('visible');
         aiPromptInput.value = '';
-        aiSendBtn.classList.remove('visible');
+        aiPromptInput.style.height = 'auto';
+        aiSendBtn.classList.remove('visible', 'generating');
+        aiSendBtnText.textContent = 'Generate →';
         clearAIImages();
       }
 
@@ -2040,18 +2093,27 @@ Type markdown here, preview on the right updates as you type."
           : userPrompt;
 
         isAIGenerating = true;
-        aiSendBtn.disabled = true;
+        aiGenerationAborted = false;
+
+        // Transform button to "Stop" state
+        aiSendBtn.classList.add('generating');
+        aiSendBtnText.textContent = 'Stop Generation';
         toolbar.classList.add('ai-generating');
         aiRetryCount = 0;
 
         try {
           await performAIGeneration(fullPrompt, currentMode);
         } catch (error) {
-          console.error('AI generation error:', error);
-          showToast('Error: ' + error.message);
+          if (!aiGenerationAborted) {
+            console.error('AI generation error:', error);
+            showToast('Error: ' + error.message);
+          }
         } finally {
           isAIGenerating = false;
-          aiSendBtn.disabled = false;
+
+          // Reset button to "Generate" state
+          aiSendBtn.classList.remove('generating');
+          aiSendBtnText.textContent = 'Generate →';
           toolbar.classList.remove('ai-generating');
         }
       }
@@ -2059,6 +2121,12 @@ Type markdown here, preview on the right updates as you type."
       // Perform AI generation with retry
       async function performAIGeneration(prompt, mode) {
         try {
+          // Check if aborted before starting
+          if (aiGenerationAborted) {
+            showToast('Generation stopped');
+            return;
+          }
+
           const selectedModel = aiModelSelector.value;
           const result = await window.electronAPI.generateContent(
             prompt,
@@ -2066,13 +2134,29 @@ Type markdown here, preview on the right updates as you type."
             aiImages
           );
 
+          // Check if aborted after API call
+          if (aiGenerationAborted) {
+            showToast('Generation stopped');
+            return;
+          }
+
           if (result.success) {
+            let contentToInject = result.content;
+
             // Inject result into editor
             if (mode === 'rich') {
-              rich.innerHTML = result.content;
+              // Parse markdown to HTML for rich mode
+              try {
+                const htmlContent = marked.parse(contentToInject);
+                rich.innerHTML = htmlContent;
+                rich.dataset.hasContent = 'true';
+              } catch (e) {
+                // Fallback to raw content if markdown parsing fails
+                rich.innerHTML = contentToInject;
+              }
               await saveRich();
             } else {
-              mdInput.value = result.content;
+              mdInput.value = contentToInject;
               updateMarkdownPreview();
               await saveMarkdown();
             }
@@ -2083,6 +2167,12 @@ Type markdown here, preview on the right updates as you type."
             throw new Error(result.error);
           }
         } catch (error) {
+          // Check if aborted
+          if (aiGenerationAborted) {
+            showToast('Generation stopped');
+            return;
+          }
+
           // Auto-retry logic
           if (aiRetryCount < MAX_AI_RETRIES) {
             aiRetryCount++;
@@ -2105,6 +2195,14 @@ Type markdown here, preview on the right updates as you type."
         }
       }
 
+      // Stop AI generation
+      function stopAIGeneration() {
+        if (isAIGenerating) {
+          aiGenerationAborted = true;
+          showToast('Stopping generation...');
+        }
+      }
+
       // Event Listeners for AI Settings
       aiSettingsBtn.addEventListener('click', openAISettings);
       aiSettingsCloseBtn.addEventListener('click', closeAISettings);
@@ -2113,7 +2211,13 @@ Type markdown here, preview on the right updates as you type."
 
       // Event Listeners for AI Floating Input
       aiCloseBtn.addEventListener('click', closeAIFloatingInput);
-      aiSendBtn.addEventListener('click', generateAIContent);
+      aiSendBtn.addEventListener('click', () => {
+        if (aiSendBtn.classList.contains('generating')) {
+          stopAIGeneration();
+        } else {
+          generateAIContent();
+        }
+      });
 
       // Close AI Settings modal when clicking overlay
       aiSettingsModal.addEventListener('click', (e) => {
