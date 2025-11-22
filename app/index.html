@@ -2948,14 +2948,26 @@ Type markdown here, preview on the right updates as you type."
             if (result.image) {
               const imageDataUrl = `data:${result.image.mimeType};base64,${result.image.data}`;
 
-              // Insert image into note
+              // Insert image at cursor position
               if (mode === 'rich') {
-                const imgTag = `<img src="${imageDataUrl}" style="max-width: 100%; border-radius: 8px;" />`;
-                rich.innerHTML += imgTag;
-                rich.dataset.hasContent = 'true';
-                await saveRich();
+                const selection = window.getSelection();
+                if (selection.rangeCount > 0) {
+                  const range = selection.getRangeAt(0);
+                  const imgTag = document.createElement('img');
+                  imgTag.src = imageDataUrl;
+                  imgTag.style.maxWidth = '100%';
+                  imgTag.style.borderRadius = '8px';
+                  imgTag.style.display = 'block';
+                  imgTag.style.margin = '8px 0';
+                  range.insertNode(imgTag);
+                  rich.dataset.hasContent = 'true';
+                  await saveRich();
+                }
               } else {
-                mdInput.value += `\n\n![Generated Image](${imageDataUrl})\n`;
+                const cursorPos = mdInput.selectionStart;
+                const before = mdInput.value.substring(0, cursorPos);
+                const after = mdInput.value.substring(cursorPos);
+                mdInput.value = before + `\n![Generated Image](${imageDataUrl})\n` + after;
                 updateMarkdownPreview();
                 await saveMarkdown();
               }

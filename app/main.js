@@ -254,17 +254,13 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
 
     // Add special config for image model
     if (isImageModel) {
-      requestConfig.config = {
-        responseModalities: ['IMAGE', 'TEXT'],
-        imageConfig: { imageSize: '1K' }
-      };
+      requestConfig.responseModalities = ['IMAGE', 'TEXT'];
+      requestConfig.imageConfig = { imageSize: '1K' };
       if (enableSearch) {
-        requestConfig.config.tools = [{ googleSearch: {} }];
+        requestConfig.tools = [{ googleSearch: {} }];
       }
     } else if (enableSearch) {
-      requestConfig.config = {
-        tools: [{ googleSearch: {} }]
-      };
+      requestConfig.tools = [{ googleSearch: {} }];
     }
 
     // Generate content with streaming
