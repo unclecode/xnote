@@ -27,6 +27,8 @@ xnote/
 │   ├── index.html                # Renderer UI
 │   ├── package.json              # App dependencies & build config
 │   ├── package-lock.json         # Locked dependencies
+│   ├── bin/
+│   │   └── xnote                 # CLI tool for service management
 │   └── assets/
 │       └── trayIconTemplate.png  # macOS menu bar icon
 ├── .github/
@@ -93,6 +95,27 @@ xnote/
   3. Upload zip file
   4. Update Homebrew tap (requires token)
 
+#### `app/bin/xnote`
+- **Purpose**: CLI tool for managing xnote as a background service
+- **Features**:
+  - `xnote start` - Start app in background (detached from terminal)
+  - `xnote stop` - Stop the app gracefully
+  - `xnote status` - Check if running and show PID
+  - `xnote restart` - Restart the app
+  - `xnote logs [-f]` - View logs (optionally follow)
+- **Process Management**:
+  - PID stored in `~/.xnote/xnote.pid`
+  - Logs written to `~/.xnote/xnote.log`
+  - Runs via `nohup` for background execution
+- **Installation**:
+  - Development: `./install-cli.sh` or add to PATH
+  - Production: Included in Homebrew from v1.0.2+
+
+#### `install-cli.sh`
+- **Purpose**: Symlink CLI to `/usr/local/bin` for development
+- **Usage**: `./install-cli.sh` (requires sudo)
+- **Alternative**: Add `app/bin` to PATH manually
+
 ---
 
 ## Development Workflow
@@ -106,16 +129,30 @@ npm install
 
 ### Running in Development
 
+**Option 1: Direct npm start (terminal-dependent)**
 ```bash
 cd app
 npm start
 ```
 
-This launches Electron with hot reload disabled. The app:
-- Runs in background (no dock icon)
+**Option 2: CLI tool (background service, recommended)**
+```bash
+# Install CLI first (one time)
+./install-cli.sh
+
+# Then use anywhere
+xnote start     # Starts in background, terminal can close
+xnote status    # Check if running
+xnote logs -f   # Follow logs
+xnote stop      # Stop when done
+```
+
+This launches Electron with the app:
+- Running in background (no dock icon)
 - Shows tray icon in menu bar
 - Responds to `Cmd+Ctrl+Shift+N` global shortcut
 - Saves data to `~/.xnote/data.json`
+- Logs to `~/.xnote/xnote.log` (CLI mode only)
 
 ### Making Changes
 
@@ -418,6 +455,48 @@ const dataDir = path.join(os.homedir(), '.xnote');
 
 Change to your desired path.
 
+### Run App as Background Service (CLI)
+
+After installing the CLI (`./install-cli.sh`):
+
+```bash
+# Start in background (terminal can close)
+xnote start
+
+# Check status
+xnote status
+
+# View logs
+xnote logs       # Last 50 lines
+xnote logs -f    # Follow live
+
+# Stop the app
+xnote stop
+
+# Restart
+xnote restart
+```
+
+**Benefits**:
+- Terminal-independent - close terminal, app keeps running
+- Easy log access via `xnote logs`
+- Process management via PID file
+- Great for daily use during development
+
+### Install CLI for Development
+
+**Option 1: System-wide (requires sudo)**
+```bash
+./install-cli.sh
+```
+Creates symlink in `/usr/local/bin/xnote`
+
+**Option 2: Add to PATH (no sudo)**
+```bash
+echo 'export PATH="/Users/unclecode/devs/xnote/app/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
 ---
 
 ## Troubleshooting
@@ -483,6 +562,45 @@ cat ~/.xnote/data.json
 
 If directory doesn't exist, app will create it on first save.
 
+### Problem: CLI command not found
+
+**If `xnote` command not found after install**:
+
+```bash
+# Check if symlink exists
+ls -la /usr/local/bin/xnote
+
+# Or check PATH
+echo $PATH | grep xnote
+
+# Re-run install
+./install-cli.sh
+```
+
+### Problem: CLI says "not running" but app is visible
+
+**Cause**: App started via `npm start` instead of CLI
+
+**Solution**:
+```bash
+# Stop npm-started instance
+pkill -f "electron.*xnote"
+
+# Use CLI instead
+xnote start
+```
+
+### Problem: Can't see CLI logs
+
+**Check log file**:
+```bash
+xnote logs        # Last 50 lines
+xnote logs -f     # Follow live
+
+# Or directly
+tail -f ~/.xnote/xnote.log
+```
+
 ---
 
 ## Development Tips
@@ -501,8 +619,16 @@ This opens the built app without creating a zip.
 
 ### Checking Logs
 
-Electron logs go to:
-- macOS: `~/Library/Logs/xnote/`
+**When running via CLI**:
+```bash
+xnote logs       # Last 50 lines
+xnote logs -f    # Follow live
+# Or: tail -f ~/.xnote/xnote.log
+```
+
+**When running via npm start**:
+- Logs appear in terminal
+- macOS system logs: `~/Library/Logs/xnote/`
 - Or check Console.app and filter by "xnote"
 
 ### Debugging Renderer Process
@@ -529,11 +655,19 @@ Most UI changes will be visible without restart.
 
 ## Summary
 
-**Daily Development**:
+**Daily Development** (Option 1: npm):
 ```bash
 cd app
 npm start
 # Make changes, test, commit
+```
+
+**Daily Development** (Option 2: CLI - Recommended):
+```bash
+xnote start      # Runs in background
+# Make changes, test, commit
+xnote restart    # Apply changes
+xnote logs -f    # Check logs
 ```
 
 **Release New Version**:
@@ -549,16 +683,23 @@ npm start
 
 | Task | Command |
 |------|---------|
-| Start dev | `cd app && npm start` |
+| Start dev (npm) | `cd app && npm start` |
+| Start dev (CLI) | `xnote start` |
+| Stop app (CLI) | `xnote stop` |
+| Check status (CLI) | `xnote status` |
+| View logs (CLI) | `xnote logs [-f]` |
+| Install CLI | `./install-cli.sh` |
 | Build test | `cd app && npm run build:dir` |
 | Release | `./release.sh X.Y.Z` |
 | Check releases | `gh release list --repo unclecode/xnote` |
 | View workflows | https://github.com/unclecode/xnote/actions |
 | Edit cask | `homebrew-xnote/Casks/xnote.rb` |
 | Data location | `~/.xnote/data.json` |
+| Logs (CLI) | `~/.xnote/xnote.log` |
+| PID file (CLI) | `~/.xnote/xnote.pid` |
 
 ---
 
-**Last Updated**: 2025-11-21  
-**Current Version**: 1.0.1  
+**Last Updated**: 2025-11-21
+**Current Version**: 1.0.1+ (with CLI support)
 **Maintainer**: unclecode
