@@ -2,6 +2,7 @@ const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage, sy
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { GoogleGenAI } = require('@google/genai');
 
 // Data directory
 const dataDir = path.join(os.homedir(), '.xnote');
@@ -15,6 +16,10 @@ if (!fs.existsSync(dataDir)) {
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+let genAI = null;
+
+// Default system prompt for AI
+const DEFAULT_SYSTEM_PROMPT = `You are an AI assistant helping to draft and refine notes. Return ONLY the requested content wrapped in <result></result> XML tags. No explanations, greetings, or commentary. Just the content.`;
 
 // Load data from file
 function loadData() {
@@ -197,6 +202,103 @@ ipcMain.on('app-quit', () => {
   app.quit();
 });
 
+// AI-related functions
+function initializeGeminiClient(apiKey) {
+  if (!apiKey) {
+    genAI = null;
+    return;
+  }
+  try {
+    genAI = new GoogleGenAI({ apiKey });
+  } catch (error) {
+    console.error('Error initializing Gemini client:', error);
+    genAI = null;
+  }
+}
+
+// AI IPC handlers
+ipcMain.handle('ai-generate-content', async (event, content, model, images = []) => {
+  if (!genAI) {
+    return { success: false, error: 'AI not configured. Please set API key in settings.' };
+  }
+
+  try {
+    const data = loadData();
+    const systemPrompt = data.aiSettings?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+
+    // Create model instance
+    const geminiModel = genAI.getGenerativeModel({ model });
+
+    // Prepare parts for the request
+    const parts = [{ text: `${systemPrompt}\n\nCurrent note:\n${content}` }];
+
+    // Add images if provided
+    if (images && images.length > 0) {
+      for (const image of images) {
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType,
+            data: image.data
+          }
+        });
+      }
+    }
+
+    // Generate content with streaming
+    const result = await geminiModel.generateContentStream({
+      contents: [{
+        role: 'user',
+        parts: parts
+      }]
+    });
+
+    // Stream response back to renderer
+    let fullText = '';
+    for await (const chunk of result.stream) {
+      const chunkText = chunk.text();
+      fullText += chunkText;
+      // Send chunk to renderer
+      event.sender.send('ai-content-chunk', chunkText);
+    }
+
+    // Extract content from <result> tags
+    const match = fullText.match(/<result>([\s\S]*?)<\/result>/);
+    const extracted = match ? match[1].trim() : fullText;
+
+    return { success: true, content: extracted };
+
+  } catch (error) {
+    console.error('AI generation error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('ai-save-settings', async (event, settings) => {
+  try {
+    const data = loadData();
+    data.aiSettings = settings;
+    saveData(data);
+
+    // Re-initialize client with new API key
+    initializeGeminiClient(settings.apiKey);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving AI settings:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('ai-get-settings', async () => {
+  try {
+    const data = loadData();
+    return data.aiSettings || null;
+  } catch (error) {
+    console.error('Error getting AI settings:', error);
+    return null;
+  }
+});
+
 // App lifecycle
 app.whenReady().then(() => {
   // Hide dock icon
@@ -207,6 +309,12 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   registerShortcuts();
+
+  // Initialize AI client if API key exists
+  const data = loadData();
+  if (data.aiSettings?.apiKey) {
+    initializeGeminiClient(data.aiSettings.apiKey);
+  }
 });
 
 app.on('window-all-closed', () => {

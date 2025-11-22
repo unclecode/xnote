@@ -710,6 +710,313 @@
         justify-content: center;
         margin-top: 4px;
       }
+
+      /* Icon button (for settings gear) */
+      .icon-btn {
+        padding: 6px 8px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .icon-btn:hover {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      /* AI Settings Modal specific styles */
+      .setting-group {
+        margin-bottom: 16px;
+      }
+
+      .setting-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-main);
+        margin-bottom: 6px;
+      }
+
+      .setting-input,
+      .setting-select,
+      .setting-textarea {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-main);
+        font-size: 13px;
+        font-family: inherit;
+        transition: border-color 0.15s ease;
+      }
+
+      .setting-input:focus,
+      .setting-select:focus,
+      .setting-textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .setting-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .help-text {
+        display: block;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .help-text a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .help-text a:hover {
+        text-decoration: underline;
+      }
+
+      /* AI Floating Input */
+      .ai-floating-input {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        box-shadow: var(--shadow-soft);
+        width: 480px;
+        max-width: 90vw;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .ai-floating-input.visible {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .ai-input-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-subtle);
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: opacity 0.2s ease, max-height 0.2s ease;
+      }
+
+      .ai-floating-input.visible .ai-input-header,
+      .ai-floating-input:hover .ai-input-header,
+      .ai-floating-input:focus-within .ai-input-header {
+        opacity: 1;
+        max-height: 50px;
+      }
+
+      .ai-model-selector {
+        flex: 1;
+        padding: 4px 8px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-main);
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .ai-model-selector:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .ai-close-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0 4px;
+        margin-left: 8px;
+        line-height: 1;
+      }
+
+      .ai-close-btn:hover {
+        color: var(--accent);
+      }
+
+      .ai-image-thumbnails {
+        display: flex;
+        gap: 8px;
+        padding: 8px 12px 0 12px;
+        flex-wrap: wrap;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease;
+      }
+
+      .ai-image-thumbnails.has-images {
+        max-height: 120px;
+        padding-bottom: 8px;
+      }
+
+      .ai-image-thumb {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+      }
+
+      .ai-image-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .ai-image-remove {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .ai-image-remove:hover {
+        background: rgba(255, 0, 0, 0.8);
+      }
+
+      .ai-prompt-input {
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        border: none;
+        color: var(--text-main);
+        font-size: 13px;
+        font-family: inherit;
+        resize: none;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .ai-prompt-input:focus {
+        outline: none;
+      }
+
+      .ai-prompt-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .ai-send-btn {
+        margin: 0 12px 12px 12px;
+        padding: 8px 16px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s ease;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+      }
+
+      .ai-send-btn.visible {
+        opacity: 1;
+        max-height: 50px;
+      }
+
+      .ai-send-btn:hover:not(:disabled) {
+        opacity: 0.9;
+      }
+
+      .ai-send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* Header glow animation for AI processing */
+      @keyframes header-glow {
+        0%, 100% {
+          background: rgba(4, 6, 18, 0.96);
+        }
+        50% {
+          background: rgba(79, 140, 255, 0.15);
+        }
+      }
+
+      .toolbar.ai-generating {
+        animation: header-glow 2s ease-in-out infinite;
+      }
+
+      :root[data-theme="light"] .toolbar.ai-generating {
+        animation: header-glow-light 2s ease-in-out infinite;
+      }
+
+      @keyframes header-glow-light {
+        0%, 100% {
+          background: rgba(245, 240, 230, 0.98);
+        }
+        50% {
+          background: rgba(139, 105, 20, 0.15);
+        }
+      }
+
+      /* Toast notifications */
+      .toast {
+        position: fixed;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-elevated);
+        color: var(--text-main);
+        padding: 10px 20px;
+        border-radius: 8px;
+        box-shadow: var(--shadow-soft);
+        border: 1px solid var(--border-subtle);
+        font-size: 13px;
+        z-index: 10000;
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
 </style>
   </head>
   <body>
@@ -733,6 +1040,12 @@
             <button type="button" data-theme="dark">Dark</button>
             <button type="button" data-theme="light">Light</button>
           </div>
+          <button class="icon-btn" id="ai-settings-btn" title="AI Settings">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 10a2 2 0 100-4 2 2 0 000 4z"/>
+              <path d="M13.4 8.4l-1.2-.3c-.1-.4-.2-.7-.4-1l.7-1 .7-.7-1.4-1.4-.7.7-1 .7c-.3-.2-.6-.3-1-.4l-.3-1.2-.2-.6h-2l-.2.6-.3 1.2c-.4.1-.7.2-1 .4l-1-.7-.7-.7-1.4 1.4.7.7.7 1c-.2.3-.3.6-.4 1l-1.2.3-.6.2v2l.6.2 1.2.3c.1.4.2.7.4 1l-.7 1-.7.7 1.4 1.4.7-.7 1-.7c.3.2.6.3 1 .4l.3 1.2.2.6h2l.2-.6.3-1.2c.4-.1.7-.2 1-.4l1 .7.7.7 1.4-1.4-.7-.7-.7-1c.2-.3.3-.6.4-1l1.2-.3.6-.2v-2l-.6-.2z"/>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -874,6 +1187,56 @@ Type markdown here, preview on the right updates as you type."
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- AI Settings Modal -->
+    <div class="modal-overlay" id="ai-settings-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">AI Settings</div>
+          <button class="modal-close" id="ai-settings-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <label for="ai-api-key">Gemini API Key</label>
+            <input type="password" id="ai-api-key" placeholder="Enter your API key" class="setting-input" />
+            <small class="help-text">Get your key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></small>
+          </div>
+          <div class="setting-group">
+            <label for="ai-model-select">Default Model</label>
+            <select id="ai-model-select" class="setting-select">
+              <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash (Default)</option>
+              <option value="models/gemini-exp-1206">Gemini Exp 1206</option>
+              <option value="models/gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Flash Thinking</option>
+              <option value="models/gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label for="ai-system-prompt">System Prompt (Note Drafting)</label>
+            <textarea id="ai-system-prompt" rows="4" placeholder="Customize how AI assists with note drafting..." class="setting-textarea"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" id="ai-settings-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="ai-settings-save-btn">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Floating Input -->
+    <div id="ai-floating-input" class="ai-floating-input">
+      <div class="ai-input-header">
+        <select id="ai-model-selector" class="ai-model-selector">
+          <option value="models/gemini-2.0-flash-exp">Gemini 2.0 Flash</option>
+          <option value="models/gemini-exp-1206">Gemini Exp 1206</option>
+          <option value="models/gemini-2.0-flash-thinking-exp-1219">Gemini 2.0 Flash Thinking</option>
+          <option value="models/gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
+        </select>
+        <button class="ai-close-btn" id="ai-close-btn">&times;</button>
+      </div>
+      <div id="ai-image-thumbnails" class="ai-image-thumbnails"></div>
+      <textarea id="ai-prompt-input" class="ai-prompt-input" placeholder="Ask AI to help with your note..." rows="1"></textarea>
+      <button id="ai-send-btn" class="ai-send-btn">Generate →</button>
     </div>
 
     <script
@@ -1433,6 +1796,355 @@ Type markdown here, preview on the right updates as you type."
           }
         });
       }
+
+      // ========== AI FUNCTIONALITY ==========
+
+      // AI Constants
+      const DEFAULT_AI_SYSTEM_PROMPT = `You are an AI assistant helping to draft and refine notes. Return ONLY the requested content wrapped in <result></result> XML tags. No explanations, greetings, or commentary. Just the content.`;
+
+      const AI_MODELS = [
+        'models/gemini-2.0-flash-exp',
+        'models/gemini-exp-1206',
+        'models/gemini-2.0-flash-thinking-exp-1219',
+        'models/gemini-1.5-pro-latest'
+      ];
+
+      // AI State
+      let aiSettings = null;
+      let isAIGenerating = false;
+      let aiImages = [];
+      let aiRetryCount = 0;
+      const MAX_AI_RETRIES = 3;
+
+      // AI DOM Elements
+      const aiSettingsModal = document.getElementById('ai-settings-modal');
+      const aiSettingsBtn = document.getElementById('ai-settings-btn');
+      const aiSettingsCloseBtn = document.getElementById('ai-settings-modal-close');
+      const aiSettingsCancelBtn = document.getElementById('ai-settings-cancel-btn');
+      const aiSettingsSaveBtn = document.getElementById('ai-settings-save-btn');
+      const aiApiKeyInput = document.getElementById('ai-api-key');
+      const aiModelSelect = document.getElementById('ai-model-select');
+      const aiSystemPromptInput = document.getElementById('ai-system-prompt');
+
+      const aiFloatingInput = document.getElementById('ai-floating-input');
+      const aiModelSelector = document.getElementById('ai-model-selector');
+      const aiCloseBtn = document.getElementById('ai-close-btn');
+      const aiPromptInput = document.getElementById('ai-prompt-input');
+      const aiSendBtn = document.getElementById('ai-send-btn');
+      const aiImageThumbnails = document.getElementById('ai-image-thumbnails');
+
+      const toolbar = document.querySelector('.toolbar');
+
+      // Toast notification
+      function showToast(message, duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), duration);
+      }
+
+      // Load AI settings
+      async function loadAISettings() {
+        if (!isElectron) return;
+
+        aiSettings = await window.electronAPI.getAISettings();
+        if (!aiSettings) {
+          aiSettings = {
+            apiKey: '',
+            defaultModel: AI_MODELS[0],
+            systemPrompt: DEFAULT_AI_SYSTEM_PROMPT
+          };
+        }
+      }
+
+      // Open AI Settings Modal
+      function openAISettings() {
+        aiApiKeyInput.value = aiSettings?.apiKey || '';
+        aiModelSelect.value = aiSettings?.defaultModel || AI_MODELS[0];
+        aiSystemPromptInput.value = aiSettings?.systemPrompt || DEFAULT_AI_SYSTEM_PROMPT;
+        aiSettingsModal.classList.add('is-visible');
+      }
+
+      // Close AI Settings Modal
+      function closeAISettings() {
+        aiSettingsModal.classList.remove('is-visible');
+      }
+
+      // Save AI Settings
+      async function saveAISettings() {
+        const apiKey = aiApiKeyInput.value.trim();
+        const model = aiModelSelect.value;
+        const systemPrompt = aiSystemPromptInput.value.trim();
+
+        if (!apiKey) {
+          showToast('Please enter an API key');
+          return;
+        }
+
+        aiSettings = {
+          apiKey,
+          defaultModel: model,
+          systemPrompt: systemPrompt || DEFAULT_AI_SYSTEM_PROMPT
+        };
+
+        if (isElectron) {
+          const result = await window.electronAPI.saveAISettings(aiSettings);
+          if (result.success) {
+            showToast('AI settings saved successfully');
+            closeAISettings();
+            // Update floating input model selector
+            aiModelSelector.value = model;
+          } else {
+            showToast('Error saving settings: ' + result.error);
+          }
+        }
+      }
+
+      // Toggle Floating Input
+      function toggleAIFloatingInput() {
+        if (aiFloatingInput.classList.contains('visible')) {
+          closeAIFloatingInput();
+        } else {
+          openAIFloatingInput();
+        }
+      }
+
+      function openAIFloatingInput() {
+        // Check if API key is configured
+        if (!aiSettings?.apiKey) {
+          openAISettings();
+          return;
+        }
+
+        aiFloatingInput.classList.add('visible');
+        aiPromptInput.focus();
+
+        // Set model selector to default
+        aiModelSelector.value = aiSettings.defaultModel;
+      }
+
+      function closeAIFloatingInput() {
+        aiFloatingInput.classList.remove('visible');
+        aiPromptInput.value = '';
+        aiSendBtn.classList.remove('visible');
+        clearAIImages();
+      }
+
+      // Handle AI Prompt Input
+      aiPromptInput.addEventListener('input', () => {
+        // Auto-grow textarea
+        aiPromptInput.style.height = 'auto';
+        aiPromptInput.style.height = aiPromptInput.scrollHeight + 'px';
+
+        // Show/hide send button
+        if (aiPromptInput.value.trim()) {
+          aiSendBtn.classList.add('visible');
+        } else {
+          aiSendBtn.classList.remove('visible');
+        }
+      });
+
+      // Handle Enter key in AI prompt
+      aiPromptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          generateAIContent();
+        }
+      });
+
+      // Image paste support
+      aiPromptInput.addEventListener('paste', async (e) => {
+        const items = e.clipboardData.items;
+        for (const item of items) {
+          if (item.type.indexOf('image') !== -1) {
+            e.preventDefault();
+            const blob = item.getAsFile();
+            await addAIImage(blob);
+          }
+        }
+      });
+
+      // Add image to AI input
+      async function addAIImage(blob) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageData = {
+            data: e.target.result.split(',')[1], // Remove data:image/png;base64, prefix
+            mimeType: blob.type,
+            preview: e.target.result
+          };
+
+          aiImages.push(imageData);
+          renderAIImageThumbnails();
+        };
+        reader.readAsDataURL(blob);
+      }
+
+      // Render image thumbnails
+      function renderAIImageThumbnails() {
+        if (aiImages.length === 0) {
+          aiImageThumbnails.innerHTML = '';
+          aiImageThumbnails.classList.remove('has-images');
+          return;
+        }
+
+        aiImageThumbnails.classList.add('has-images');
+        aiImageThumbnails.innerHTML = aiImages.map((img, index) => `
+          <div class="ai-image-thumb">
+            <img src="${img.preview}" alt="Pasted image ${index + 1}">
+            <button class="ai-image-remove" onclick="removeAIImage(${index})">&times;</button>
+          </div>
+        `).join('');
+      }
+
+      // Remove image
+      window.removeAIImage = function(index) {
+        aiImages.splice(index, 1);
+        renderAIImageThumbnails();
+      };
+
+      // Clear all images
+      function clearAIImages() {
+        aiImages = [];
+        renderAIImageThumbnails();
+      }
+
+      // Generate AI Content
+      async function generateAIContent() {
+        if (isAIGenerating) return;
+        if (!aiSettings?.apiKey) {
+          showToast('Please configure AI settings first');
+          openAISettings();
+          return;
+        }
+
+        const userPrompt = aiPromptInput.value.trim();
+        if (!userPrompt && aiImages.length === 0) {
+          showToast('Please enter a prompt or paste an image');
+          return;
+        }
+
+        // Get current note content
+        const currentMode = await storage.get(KEY_MODE) || 'rich';
+        let noteContent = '';
+        if (currentMode === 'rich') {
+          noteContent = rich.innerText.trim();
+        } else {
+          noteContent = mdInput.value.trim();
+        }
+
+        // Combine note content with user prompt
+        const fullPrompt = noteContent
+          ? `${noteContent}\n\n${userPrompt}`
+          : userPrompt;
+
+        isAIGenerating = true;
+        aiSendBtn.disabled = true;
+        toolbar.classList.add('ai-generating');
+        aiRetryCount = 0;
+
+        try {
+          await performAIGeneration(fullPrompt, currentMode);
+        } catch (error) {
+          console.error('AI generation error:', error);
+          showToast('Error: ' + error.message);
+        } finally {
+          isAIGenerating = false;
+          aiSendBtn.disabled = false;
+          toolbar.classList.remove('ai-generating');
+        }
+      }
+
+      // Perform AI generation with retry
+      async function performAIGeneration(prompt, mode) {
+        try {
+          const selectedModel = aiModelSelector.value;
+          const result = await window.electronAPI.generateContent(
+            prompt,
+            selectedModel,
+            aiImages
+          );
+
+          if (result.success) {
+            // Inject result into editor
+            if (mode === 'rich') {
+              rich.innerHTML = result.content;
+              await saveRich();
+            } else {
+              mdInput.value = result.content;
+              updateMarkdownPreview();
+              await saveMarkdown();
+            }
+
+            closeAIFloatingInput();
+            showToast('AI generation complete');
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (error) {
+          // Auto-retry logic
+          if (aiRetryCount < MAX_AI_RETRIES) {
+            aiRetryCount++;
+            showToast(`Retrying... (${aiRetryCount}/${MAX_AI_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return performAIGeneration(prompt, mode);
+          } else {
+            // Ask user if they want to retry
+            const retry = await showConfirm(
+              `AI generation failed after ${MAX_AI_RETRIES} attempts. Try again?`,
+              'Error'
+            );
+            if (retry) {
+              aiRetryCount = 0;
+              return performAIGeneration(prompt, mode);
+            } else {
+              throw error;
+            }
+          }
+        }
+      }
+
+      // Event Listeners for AI Settings
+      aiSettingsBtn.addEventListener('click', openAISettings);
+      aiSettingsCloseBtn.addEventListener('click', closeAISettings);
+      aiSettingsCancelBtn.addEventListener('click', closeAISettings);
+      aiSettingsSaveBtn.addEventListener('click', saveAISettings);
+
+      // Event Listeners for AI Floating Input
+      aiCloseBtn.addEventListener('click', closeAIFloatingInput);
+      aiSendBtn.addEventListener('click', generateAIContent);
+
+      // Close AI Settings modal when clicking overlay
+      aiSettingsModal.addEventListener('click', (e) => {
+        if (e.target === aiSettingsModal) {
+          closeAISettings();
+        }
+      });
+
+      // Keyboard shortcuts for AI
+      window.addEventListener('keydown', (e) => {
+        // Cmd+Y to toggle AI floating input
+        if ((e.metaKey || e.ctrlKey) && e.key === 'y') {
+          e.preventDefault();
+          toggleAIFloatingInput();
+          return;
+        }
+
+        // Escape to close AI floating input
+        if (e.key === 'Escape' && aiFloatingInput.classList.contains('visible')) {
+          e.preventDefault();
+          closeAIFloatingInput();
+          return;
+        }
+      });
+
+      // Initialize AI settings on load
+      if (isElectron) {
+        loadAISettings();
+      }
+
+      // ========== END AI FUNCTIONALITY ==========
     </script>
   </body>
 </html>
