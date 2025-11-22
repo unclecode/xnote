@@ -996,6 +996,38 @@
         background: rgba(255, 0, 0, 0.8);
       }
 
+      .ai-mode-toggle-wrapper {
+        display: flex;
+        gap: 0;
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        padding: 2px;
+        margin: 0 8px;
+      }
+
+      .ai-mode-btn {
+        padding: 4px 12px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .ai-mode-btn:hover {
+        color: var(--text-main);
+      }
+
+      .ai-mode-btn.is-active {
+        background: var(--bg-main);
+        color: var(--text-main);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
       .ai-prompt-input {
         width: 100%;
         padding: 12px;
@@ -1359,33 +1391,54 @@
         max-width: 100%;
       }
 
-      .generated-image img {
+      .image-container {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+      }
+
+      .image-container img {
         max-width: 100%;
         display: block;
         border-radius: 8px;
       }
 
-      .image-actions {
+      .image-overlay-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
         display: flex;
-        gap: 8px;
-        margin-top: 8px;
+        gap: 6px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
       }
 
-      .image-action-btn {
-        padding: 6px 12px;
-        background: var(--bg-elevated-soft);
-        border: 1px solid var(--border-subtle);
+      .image-container:hover .image-overlay-actions {
+        opacity: 1;
+      }
+
+      .image-icon-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        border: none;
         border-radius: 6px;
-        color: var(--text-main);
+        color: white;
         cursor: pointer;
-        font-size: 12px;
         transition: all 0.2s ease;
       }
 
-      .image-action-btn:hover {
+      .image-icon-btn:hover {
         background: var(--accent);
-        color: white;
-        border-color: var(--accent);
+        transform: scale(1.1);
+      }
+
+      .image-icon-btn svg {
+        stroke: currentColor;
       }
 
       /* Chat Selection Context */
@@ -1992,6 +2045,10 @@ Type markdown here, preview on the right updates as you type."
           <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
           <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
         </select>
+        <div class="ai-mode-toggle-wrapper">
+          <button class="ai-mode-btn" data-mode="replace" id="ai-mode-replace">Replace</button>
+          <button class="ai-mode-btn is-active" data-mode="insert" id="ai-mode-insert">Insert</button>
+        </div>
         <button class="ai-close-btn" id="ai-close-btn">&times;</button>
       </div>
       <div id="ai-selection-context" class="ai-selection-context">
@@ -2616,11 +2673,21 @@ Type markdown here, preview on the right updates as you type."
       const aiSelectionContext = document.getElementById('ai-selection-context');
       const aiContextContent = document.getElementById('ai-context-content');
       const aiContextRemoveBtn = document.getElementById('ai-context-remove-btn');
+      const aiModeReplaceBtn = document.getElementById('ai-mode-replace');
+      const aiModeInsertBtn = document.getElementById('ai-mode-insert');
 
       const toolbar = document.querySelector('.toolbar');
 
+      // AI mode state (default: insert)
+      let aiInsertMode = true;
+
       // AI generation control
       let aiGenerationAborted = false;
+      let receivedGeneratedImage = null; // Store image received from AI generation
+
+      // Cursor position storage for insert mode
+      let savedCursorRange = null; // For rich mode
+      let savedCursorPosition = null; // For markdown mode
 
       // Toast notification
       function showToast(message, duration = 3000) {
@@ -2753,7 +2820,10 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
-        // Try to capture selection
+        // FIRST: Save cursor position BEFORE anything else
+        saveCursorPosition();
+
+        // THEN: Try to capture selection
         const hasSelection = captureSelection();
 
         aiFloatingInput.classList.add('visible');
@@ -2765,6 +2835,27 @@ Type markdown here, preview on the right updates as you type."
         // Show selection context if text was selected
         if (hasSelection) {
           showSelectionContext();
+        }
+      }
+
+      // Save cursor position from the main editors
+      function saveCursorPosition() {
+        const currentMode = root.getAttribute('data-mode') || 'rich';
+
+        if (currentMode === 'rich') {
+          // Save cursor position for rich editor
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            savedCursorRange = selection.getRangeAt(0).cloneRange();
+          } else {
+            // No selection, create range at end of rich editor
+            savedCursorRange = document.createRange();
+            savedCursorRange.selectNodeContents(rich);
+            savedCursorRange.collapse(false); // Collapse to end
+          }
+        } else {
+          // Save cursor position for markdown editor
+          savedCursorPosition = mdInput.selectionStart;
         }
       }
 
@@ -2798,6 +2889,19 @@ Type markdown here, preview on the right updates as you type."
           e.preventDefault();
           generateAIContent();
         }
+      });
+
+      // Handle mode toggle buttons
+      aiModeReplaceBtn.addEventListener('click', () => {
+        aiInsertMode = false;
+        aiModeReplaceBtn.classList.add('is-active');
+        aiModeInsertBtn.classList.remove('is-active');
+      });
+
+      aiModeInsertBtn.addEventListener('click', () => {
+        aiInsertMode = true;
+        aiModeInsertBtn.classList.add('is-active');
+        aiModeReplaceBtn.classList.remove('is-active');
       });
 
       // Image paste support
@@ -2922,6 +3026,9 @@ Type markdown here, preview on the right updates as you type."
       // Perform AI generation with retry
       async function performAIGeneration(prompt, mode) {
         try {
+          // Reset received image
+          receivedGeneratedImage = null;
+
           // Check if aborted before starting
           if (aiGenerationAborted) {
             showToast('Generation stopped');
@@ -2929,6 +3036,8 @@ Type markdown here, preview on the right updates as you type."
           }
 
           const selectedModel = aiModelSelector.value;
+          const isImageModel = selectedModel === 'models/gemini-3-pro-image-preview';
+
           const result = await window.electronAPI.generateContent(
             prompt,
             selectedModel,
@@ -2941,35 +3050,86 @@ Type markdown here, preview on the right updates as you type."
             return;
           }
 
+          // For image models, wait for the image chunk to arrive via IPC
+          if (isImageModel) {
+            // Wait up to 2 seconds for image to arrive
+            let attempts = 0;
+            while (!receivedGeneratedImage && !result.image && attempts < 20) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              attempts++;
+            }
+            console.log('Floating: Image wait complete. receivedGeneratedImage:', receivedGeneratedImage, 'result.image:', result.image);
+          }
+
           if (result.success) {
             let contentToInject = result.content;
 
-            // Handle image generation
-            if (result.image) {
-              const imageDataUrl = `data:${result.image.mimeType};base64,${result.image.data}`;
+            // Handle image generation - prioritize image over text
+            const imageData = receivedGeneratedImage || result.image;
+            if (imageData) {
+              // Use file path if available, otherwise use base64 data
+              const imageSrc = imageData.filePath
+                ? `file://${imageData.filePath}`
+                : `data:${imageData.mimeType};base64,${imageData.data}`;
 
-              // Insert image at cursor position
+              // Images respect insert mode toggle
+              const isInsertMode = aiInsertMode;
+
               if (mode === 'rich') {
-                const selection = window.getSelection();
-                if (selection.rangeCount > 0) {
-                  const range = selection.getRangeAt(0);
+                // Use saved cursor position for rich mode
+                const range = savedCursorRange || (window.getSelection().rangeCount > 0 ? window.getSelection().getRangeAt(0) : null);
+
+                if (range) {
+                  // If not in insert mode and there's a selection, delete it first
+                  if (!isInsertMode && !range.collapsed) {
+                    range.deleteContents();
+                  }
+
                   const imgTag = document.createElement('img');
-                  imgTag.src = imageDataUrl;
+                  imgTag.src = imageSrc;
                   imgTag.style.maxWidth = '100%';
                   imgTag.style.borderRadius = '8px';
                   imgTag.style.display = 'block';
                   imgTag.style.margin = '8px 0';
                   range.insertNode(imgTag);
+
+                  // Move cursor after image
+                  range.setStartAfter(imgTag);
+                  range.collapse(true);
+
                   rich.dataset.hasContent = 'true';
                   await saveRich();
+
+                  // Restore selection
+                  const selection = window.getSelection();
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+
+                  // Focus back to rich editor
+                  rich.focus();
                 }
               } else {
-                const cursorPos = mdInput.selectionStart;
-                const before = mdInput.value.substring(0, cursorPos);
-                const after = mdInput.value.substring(cursorPos);
-                mdInput.value = before + `\n![Generated Image](${imageDataUrl})\n` + after;
+                // Use saved cursor position for markdown mode
+                const cursorPos = savedCursorPosition !== null ? savedCursorPosition : mdInput.selectionStart;
+
+                if (isInsertMode) {
+                  // Insert mode: insert at saved cursor
+                  const before = mdInput.value.substring(0, cursorPos);
+                  const after = mdInput.value.substring(cursorPos);
+                  mdInput.value = before + `\n![Generated Image](${imageSrc})\n` + after;
+                } else {
+                  // Replace mode: use selection if available
+                  const selectionEnd = mdInput.selectionEnd;
+                  const before = mdInput.value.substring(0, cursorPos);
+                  const after = mdInput.value.substring(selectionEnd || cursorPos);
+                  mdInput.value = before + `\n![Generated Image](${imageSrc})\n` + after;
+                }
+
                 updateMarkdownPreview();
                 await saveMarkdown();
+
+                // Focus back to markdown editor
+                mdInput.focus();
               }
 
               closeAIFloatingInput();
@@ -2977,62 +3137,120 @@ Type markdown here, preview on the right updates as you type."
               return;
             }
 
-            // Phase 1.5: Replace selection if available, otherwise replace entire note
-            if (aiSelectedText && aiSelectionMode) {
-              // Replace only the selected text
-              if (aiSelectionMode === 'rich' && aiSelectionRange) {
-                // Rich mode: Replace selection using Range API
-                try {
-                  aiSelectionRange.deleteContents();
+            // Check if insert mode is enabled
+            const isInsertMode = aiInsertMode;
 
-                  // Parse markdown to HTML for rich mode
-                  const htmlContent = marked.parse(contentToInject);
+            if (isInsertMode) {
+              // INSERT MODE: Insert at SAVED cursor position from main editor
+              // Strip trailing whitespace/newlines in insert mode for cleaner insertion
+              const cleanContent = contentToInject.trimEnd();
+
+              if (mode === 'rich') {
+                // Rich mode: Insert at saved cursor position
+                if (savedCursorRange) {
+                  // Parse markdown to HTML
+                  const htmlContent = marked.parse(cleanContent);
                   const tempDiv = document.createElement('div');
                   tempDiv.innerHTML = htmlContent;
 
-                  // Insert all nodes from the temp div
+                  // Insert at saved cursor position
                   const fragment = document.createDocumentFragment();
                   while (tempDiv.firstChild) {
                     fragment.appendChild(tempDiv.firstChild);
                   }
-                  aiSelectionRange.insertNode(fragment);
+
+                  // Use the saved range
+                  savedCursorRange.insertNode(fragment);
+
+                  // Move cursor after inserted content
+                  savedCursorRange.collapse(false);
 
                   rich.dataset.hasContent = 'true';
                   await saveRich();
-                } catch (e) {
-                  console.error('Error replacing selection in rich mode:', e);
-                  showToast('Error replacing selection');
-                }
-              } else if (aiSelectionMode === 'md' && aiSelectionStart !== null && aiSelectionEnd !== null) {
-                // Markdown mode: Replace text between selectionStart and selectionEnd
-                const before = mdInput.value.substring(0, aiSelectionStart);
-                const after = mdInput.value.substring(aiSelectionEnd);
-                mdInput.value = before + contentToInject + after;
 
-                // Set cursor position after inserted content
-                const newCursorPos = aiSelectionStart + contentToInject.length;
+                  // Restore cursor position
+                  const selection = window.getSelection();
+                  selection.removeAllRanges();
+                  selection.addRange(savedCursorRange);
+
+                  // Focus back to rich editor
+                  rich.focus();
+                }
+              } else {
+                // Markdown mode: Insert at saved cursor position
+                const cursorPos = savedCursorPosition !== null ? savedCursorPosition : mdInput.selectionStart;
+                const before = mdInput.value.substring(0, cursorPos);
+                const after = mdInput.value.substring(cursorPos);
+                mdInput.value = before + cleanContent + after;
+
+                // Move cursor after inserted content
+                const newCursorPos = cursorPos + cleanContent.length;
                 mdInput.setSelectionRange(newCursorPos, newCursorPos);
 
                 updateMarkdownPreview();
                 await saveMarkdown();
+
+                // Focus back to markdown editor
+                mdInput.focus();
               }
             } else {
-              // Original Phase 1 behavior: Replace entire note
-              if (mode === 'rich') {
-                // Parse markdown to HTML for rich mode
-                try {
-                  const htmlContent = marked.parse(contentToInject);
-                  rich.innerHTML = htmlContent;
-                  rich.dataset.hasContent = 'true';
-                } catch (e) {
-                  // Fallback to raw content if markdown parsing fails
-                  rich.innerHTML = contentToInject;
+              // REPLACE MODE: Replace selection or entire note
+              if (aiSelectedText && aiSelectionMode) {
+                // Replace only the selected text
+                if (aiSelectionMode === 'rich' && aiSelectionRange) {
+                  // Rich mode: Replace selection using Range API
+                  try {
+                    aiSelectionRange.deleteContents();
+
+                    // Parse markdown to HTML for rich mode
+                    const htmlContent = marked.parse(contentToInject);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = htmlContent;
+
+                    // Insert all nodes from the temp div
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                      fragment.appendChild(tempDiv.firstChild);
+                    }
+                    aiSelectionRange.insertNode(fragment);
+
+                    rich.dataset.hasContent = 'true';
+                    await saveRich();
+                  } catch (e) {
+                    console.error('Error replacing selection in rich mode:', e);
+                    showToast('Error replacing selection');
+                  }
+                } else if (aiSelectionMode === 'md' && aiSelectionStart !== null && aiSelectionEnd !== null) {
+                  // Markdown mode: Replace text between selectionStart and selectionEnd
+                  const before = mdInput.value.substring(0, aiSelectionStart);
+                  const after = mdInput.value.substring(aiSelectionEnd);
+                  mdInput.value = before + contentToInject + after;
+
+                  // Set cursor position after inserted content
+                  const newCursorPos = aiSelectionStart + contentToInject.length;
+                  mdInput.setSelectionRange(newCursorPos, newCursorPos);
+
+                  updateMarkdownPreview();
+                  await saveMarkdown();
                 }
-                await saveRich();
               } else {
-                mdInput.value = contentToInject;
-                updateMarkdownPreview();
-                await saveMarkdown();
+                // Replace entire note
+                if (mode === 'rich') {
+                  // Parse markdown to HTML for rich mode
+                  try {
+                    const htmlContent = marked.parse(contentToInject);
+                    rich.innerHTML = htmlContent;
+                    rich.dataset.hasContent = 'true';
+                  } catch (e) {
+                    // Fallback to raw content if markdown parsing fails
+                    rich.innerHTML = contentToInject;
+                  }
+                  await saveRich();
+                } else {
+                  mdInput.value = contentToInject;
+                  updateMarkdownPreview();
+                  await saveMarkdown();
+                }
               }
             }
 
@@ -3122,6 +3340,11 @@ Type markdown here, preview on the right updates as you type."
       // Initialize AI settings on load
       if (isElectron) {
         loadAISettings();
+
+        // Listen for image chunks from AI generation
+        window.electronAPI.onImageChunk((imageData) => {
+          receivedGeneratedImage = imageData;
+        });
       }
 
       // Initialize Lucide icons
@@ -3450,19 +3673,47 @@ Type markdown here, preview on the right updates as you type."
 
         try {
           const model = chatModelSelector.value;
+          const isImageModel = model === 'models/gemini-3-pro-image-preview';
+
+          // Reset received image
+          receivedGeneratedImage = null;
+
           const result = await window.electronAPI.generateContent(
             fullMessage,
             model,
             chatImages
           );
 
+          // For image models, wait for the image chunk to arrive via IPC
+          if (isImageModel) {
+            // Wait up to 2 seconds for image to arrive
+            let attempts = 0;
+            while (!receivedGeneratedImage && !result.image && attempts < 20) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              attempts++;
+            }
+            console.log('Image wait complete. receivedGeneratedImage:', receivedGeneratedImage, 'result.image:', result.image);
+          }
+
           // Clear images after sending
           clearChatImages();
 
           if (result.success) {
             chatMessages[aiMsgIndex].thinking = false;
-            chatMessages[aiMsgIndex].content = result.content;
-            chatMessages[aiMsgIndex].image = result.image;
+
+            // Prioritize received image over result.image
+            const finalImage = receivedGeneratedImage || result.image;
+
+            if (finalImage) {
+              // If we have an image, don't show text
+              chatMessages[aiMsgIndex].content = '';
+              chatMessages[aiMsgIndex].image = finalImage;
+              console.log('Chat: Using image:', finalImage);
+            } else {
+              // No image, show text
+              chatMessages[aiMsgIndex].content = result.content;
+              console.log('Chat: No image found, using text');
+            }
             renderChatMessages();
             saveChatSession();
           } else {
@@ -3519,14 +3770,26 @@ Type markdown here, preview on the right updates as you type."
 
           // Add image if present
           if (msg.image) {
-            const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
+            // Use file path if available, otherwise use base64 data
+            const imageDataUrl = msg.image.filePath
+              ? `file://${msg.image.filePath}`
+              : `data:${msg.image.mimeType};base64,${msg.image.data}`;
             const imageDiv = document.createElement('div');
             imageDiv.className = 'generated-image';
             imageDiv.innerHTML = `
-              <img src="${imageDataUrl}" alt="Generated image" />
-              <div class="image-actions">
-                <button class="image-action-btn" onclick="downloadChatImage(${index})">Download</button>
-                <button class="image-action-btn" onclick="openChatImageInTab(${index})">Open in tab</button>
+              <div class="image-container">
+                <img src="${imageDataUrl}" alt="Generated image" />
+                <div class="image-overlay-actions">
+                  <button class="image-icon-btn" onclick="copyChatImage(${index})" title="Copy image">
+                    <i data-lucide="copy" width="16" height="16"></i>
+                  </button>
+                  <button class="image-icon-btn" onclick="downloadChatImage(${index})" title="Download">
+                    <i data-lucide="download" width="16" height="16"></i>
+                  </button>
+                  <button class="image-icon-btn" onclick="openChatImageInTab(${index})" title="Open in tab">
+                    <i data-lucide="external-link" width="16" height="16"></i>
+                  </button>
+                </div>
               </div>
             `;
             contentDiv.appendChild(imageDiv);
@@ -3576,13 +3839,34 @@ Type markdown here, preview on the right updates as you type."
         }
       };
 
+      // Copy chat image to clipboard
+      window.copyChatImage = async function(index) {
+        const msg = chatMessages[index];
+        if (msg?.image) {
+          try {
+            const imageSrc = msg.image.filePath || `data:${msg.image.mimeType};base64,${msg.image.data}`;
+            const response = await fetch(imageSrc);
+            const blob = await response.blob();
+            await navigator.clipboard.write([
+              new ClipboardItem({ [blob.type]: blob })
+            ]);
+            showToast('Image copied to clipboard');
+          } catch (err) {
+            console.error('Copy failed:', err);
+            showToast('Failed to copy image');
+          }
+        }
+      };
+
       // Download chat image
       window.downloadChatImage = function(index) {
         const msg = chatMessages[index];
         if (msg?.image) {
-          const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          const imageSrc = msg.image.filePath
+            ? `file://${msg.image.filePath}`
+            : `data:${msg.image.mimeType};base64,${msg.image.data}`;
           const link = document.createElement('a');
-          link.href = imageDataUrl;
+          link.href = imageSrc;
           link.download = `generated-image-${Date.now()}.png`;
           link.click();
           showToast('Image downloaded');
@@ -3593,8 +3877,10 @@ Type markdown here, preview on the right updates as you type."
       window.openChatImageInTab = function(index) {
         const msg = chatMessages[index];
         if (msg?.image) {
-          const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
-          window.open(imageDataUrl, '_blank');
+          const imageSrc = msg.image.filePath
+            ? `file://${msg.image.filePath}`
+            : `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          window.open(imageSrc, '_blank');
         }
       };
 

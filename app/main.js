@@ -3,14 +3,21 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const { GoogleGenAI } = require('@google/genai');
+const crypto = require('crypto');
 
 // Data directory
 const dataDir = path.join(os.homedir(), '.xnote');
 const dataFile = path.join(dataDir, 'data.json');
+const imagesDir = path.join(dataDir, 'images');
 
 // Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Ensure images directory exists
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
 }
 
 let mainWindow = null;
@@ -229,7 +236,10 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
     const isImageModel = model === 'models/gemini-3-pro-image-preview';
 
     // Prepare parts for the request
-    const parts = [{ text: `${systemPrompt}\n\nCurrent note:\n${content}` }];
+    // For image models, don't use system prompt - just send the content
+    const parts = isImageModel
+      ? [{ text: content }]
+      : [{ text: `${systemPrompt}\n\nCurrent note:\n${content}` }];
 
     // Add images if provided
     if (images && images.length > 0) {
@@ -254,14 +264,20 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
 
     // Add special config for image model
     if (isImageModel) {
-      requestConfig.responseModalities = ['IMAGE', 'TEXT'];
-      requestConfig.imageConfig = { imageSize: '1K' };
+      requestConfig.config = {
+        responseModalities: ['IMAGE'],
+        imageConfig: {}
+      };
       if (enableSearch) {
-        requestConfig.tools = [{ googleSearch: {} }];
+        requestConfig.config.tools = [{ googleSearch: {} }];
       }
     } else if (enableSearch) {
-      requestConfig.tools = [{ googleSearch: {} }];
+      requestConfig.config = {
+        tools: [{ googleSearch: {} }]
+      };
     }
+
+    console.log('Request config:', JSON.stringify(requestConfig, null, 2));
 
     // Generate content with streaming
     const response = await genAI.models.generateContentStream(requestConfig);
@@ -271,6 +287,9 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
     let imageData = null;
 
     for await (const chunk of response) {
+      // Log chunk structure for debugging
+      console.log('Chunk received:', JSON.stringify(chunk, null, 2).substring(0, 500));
+
       // Handle text chunks
       const chunkText = chunk.text;
       if (chunkText) {
@@ -279,15 +298,37 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
       }
 
       // Handle image chunks
-      if (chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
-        const inlineData = chunk.candidates[0].content.parts[0].inlineData;
-        imageData = {
-          mimeType: inlineData.mimeType,
-          data: inlineData.data
-        };
-        event.sender.send('ai-image-chunk', imageData);
+      if (chunk.candidates?.[0]?.content?.parts) {
+        console.log('Parts found:', chunk.candidates[0].content.parts.length);
+        for (const part of chunk.candidates[0].content.parts) {
+          console.log('Part type:', part.inlineData ? 'inlineData' : 'other', Object.keys(part));
+          if (part.inlineData) {
+            const inlineData = part.inlineData;
+            const mimeType = inlineData.mimeType || 'image/png';
+            const imageBuffer = Buffer.from(inlineData.data, 'base64');
+
+            // Generate unique filename
+            const extension = mimeType.split('/')[1] || 'png';
+            const filename = `generated-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${extension}`;
+            const filePath = path.join(imagesDir, filename);
+
+            // Save image to disk
+            fs.writeFileSync(filePath, imageBuffer);
+            console.log('Image saved to:', filePath);
+
+            // Send file path to renderer
+            imageData = {
+              mimeType: mimeType,
+              filePath: filePath,
+              filename: filename
+            };
+            event.sender.send('ai-image-chunk', imageData);
+          }
+        }
       }
     }
+
+    console.log('Final imageData:', imageData ? 'Present' : 'NULL');
 
     // Extract content from <result> tags for text
     const match = fullText.match(/<result>([\s\S]*?)<\/result>/);

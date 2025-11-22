@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   generateContent: (content, model, images) => ipcRenderer.invoke('ai-generate-content', content, model, images),
   saveAISettings: (settings) => ipcRenderer.invoke('ai-save-settings', settings),
   getAISettings: () => ipcRenderer.invoke('ai-get-settings'),
-  onContentChunk: (callback) => ipcRenderer.on('ai-content-chunk', (_, chunk) => callback(chunk))
+  onContentChunk: (callback) => ipcRenderer.on('ai-content-chunk', (_, chunk) => callback(chunk)),
+  onImageChunk: (callback) => ipcRenderer.on('ai-image-chunk', (_, imageData) => callback(imageData))
 });
