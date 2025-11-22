@@ -41,7 +41,8 @@
       "main.js",
       "preload.js",
       "index.html",
-      "assets/**/*"
+      "assets/**/*",
+      "bin/**/*"
     ],
     "publish": null
   }

@@ -24,6 +24,27 @@ brew install --cask xnote
 brew upgrade xnote
 ```
 
+## CLI (Optional)
+
+Control xnote from the command line:
+
+```bash
+# For development - Install CLI symlink
+./install-cli.sh
+
+# Or add to PATH manually
+export PATH="/path/to/xnote/app/bin:$PATH"
+
+# Then use:
+xnote start      # Start in background
+xnote stop       # Stop the app
+xnote status     # Check status
+xnote restart    # Restart
+xnote logs       # View logs (use -f to follow)
+```
+
+**Note**: CLI is included in Homebrew installs from v1.0.2+
+
 ## Keyboard Shortcuts
 
 | Action | Shortcut |

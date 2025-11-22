@@ -1,0 +1,146 @@
+#!/bin/bash
+
+# xnote CLI - Manage xnote as a background service
+
+APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+PID_FILE="$HOME/.xnote/xnote.pid"
+LOG_FILE="$HOME/.xnote/xnote.log"
+
+# Ensure data directory exists
+mkdir -p "$HOME/.xnote"
+
+start_app() {
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE")
+        if ps -p $PID > /dev/null 2>&1; then
+            echo "xnote is already running (PID: $PID)"
+            return 1
+        else
+            # Stale PID file
+            rm "$PID_FILE"
+        fi
+    fi
+    
+    echo "Starting xnote..."
+    cd "$APP_DIR"
+    
+    # Start Electron in background
+    nohup npm start > "$LOG_FILE" 2>&1 &
+    PID=$!
+    echo $PID > "$PID_FILE"
+    
+    # Wait a moment and check if it's still running
+    sleep 2
+    if ps -p $PID > /dev/null 2>&1; then
+        echo "xnote started successfully (PID: $PID)"
+        echo "Press Cmd+Ctrl+Shift+N to show the window"
+    else
+        echo "Failed to start xnote. Check logs: $LOG_FILE"
+        rm "$PID_FILE"
+        return 1
+    fi
+}
+
+stop_app() {
+    if [ ! -f "$PID_FILE" ]; then
+        echo "xnote is not running (no PID file found)"
+        return 1
+    fi
+    
+    PID=$(cat "$PID_FILE")
+    if ! ps -p $PID > /dev/null 2>&1; then
+        echo "xnote is not running (process not found)"
+        rm "$PID_FILE"
+        return 1
+    fi
+    
+    echo "Stopping xnote (PID: $PID)..."
+    kill $PID
+    
+    # Wait for process to exit
+    for i in {1..10}; do
+        if ! ps -p $PID > /dev/null 2>&1; then
+            rm "$PID_FILE"
+            echo "xnote stopped"
+            return 0
+        fi
+        sleep 0.5
+    done
+    
+    # Force kill if still running
+    echo "Force stopping..."
+    kill -9 $PID 2>/dev/null
+    rm "$PID_FILE"
+    echo "xnote stopped (forced)"
+}
+
+status_app() {
+    if [ ! -f "$PID_FILE" ]; then
+        echo "xnote is not running"
+        return 1
+    fi
+    
+    PID=$(cat "$PID_FILE")
+    if ps -p $PID > /dev/null 2>&1; then
+        echo "xnote is running (PID: $PID)"
+        echo "Log file: $LOG_FILE"
+        echo "Data directory: $HOME/.xnote"
+        return 0
+    else
+        echo "xnote is not running (stale PID file)"
+        rm "$PID_FILE"
+        return 1
+    fi
+}
+
+restart_app() {
+    echo "Restarting xnote..."
+    stop_app
+    sleep 1
+    start_app
+}
+
+logs_app() {
+    if [ ! -f "$LOG_FILE" ]; then
+        echo "No logs found"
+        return 1
+    fi
+    
+    if [ "$1" = "-f" ]; then
+        tail -f "$LOG_FILE"
+    else
+        tail -n 50 "$LOG_FILE"
+    fi
+}
+
+case "$1" in
+    start)
+        start_app
+        ;;
+    stop)
+        stop_app
+        ;;
+    status)
+        status_app
+        ;;
+    restart)
+        restart_app
+        ;;
+    logs)
+        logs_app "$2"
+        ;;
+    *)
+        echo "xnote - Minimalist note-taking app"
+        echo ""
+        echo "Usage: xnote <command>"
+        echo ""
+        echo "Commands:"
+        echo "  start       Start xnote in background"
+        echo "  stop        Stop xnote"
+        echo "  restart     Restart xnote"
+        echo "  status      Check if xnote is running"
+        echo "  logs        Show logs (use -f to follow)"
+        echo ""
+        exit 1
+        ;;
+esac
