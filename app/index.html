@@ -1333,6 +1333,61 @@
         padding: 0;
       }
 
+      /* Thinking indicator */
+      .thinking-indicator {
+        font-size: 13px;
+        color: var(--text-muted);
+        padding: 8px 12px;
+      }
+
+      .thinking-dots::after {
+        content: '.';
+        animation: dots 1.5s steps(3, end) infinite;
+      }
+
+      @keyframes dots {
+        0%, 20% { content: '.'; }
+        40% { content: '..'; }
+        60%, 100% { content: '...'; }
+      }
+
+      /* Generated image */
+      .generated-image {
+        margin: 8px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        max-width: 100%;
+      }
+
+      .generated-image img {
+        max-width: 100%;
+        display: block;
+        border-radius: 8px;
+      }
+
+      .image-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+
+      .image-action-btn {
+        padding: 6px 12px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-main);
+        cursor: pointer;
+        font-size: 12px;
+        transition: all 0.2s ease;
+      }
+
+      .image-action-btn:hover {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
       /* Chat Selection Context */
       .chat-selection-context {
         display: none;
@@ -2889,6 +2944,27 @@ Type markdown here, preview on the right updates as you type."
           if (result.success) {
             let contentToInject = result.content;
 
+            // Handle image generation
+            if (result.image) {
+              const imageDataUrl = `data:${result.image.mimeType};base64,${result.image.data}`;
+
+              // Insert image into note
+              if (mode === 'rich') {
+                const imgTag = `<img src="${imageDataUrl}" style="max-width: 100%; border-radius: 8px;" />`;
+                rich.innerHTML += imgTag;
+                rich.dataset.hasContent = 'true';
+                await saveRich();
+              } else {
+                mdInput.value += `\n\n![Generated Image](${imageDataUrl})\n`;
+                updateMarkdownPreview();
+                await saveMarkdown();
+              }
+
+              closeAIFloatingInput();
+              showToast('Image generated and inserted');
+              return;
+            }
+
             // Phase 1.5: Replace selection if available, otherwise replace entire note
             if (aiSelectedText && aiSelectionMode) {
               // Replace only the selected text
@@ -3353,6 +3429,7 @@ Type markdown here, preview on the right updates as you type."
         const aiMsg = {
           role: 'ai',
           content: '',
+          thinking: true,
           timestamp: new Date().toISOString()
         };
         chatMessages.push(aiMsg);
@@ -3371,7 +3448,9 @@ Type markdown here, preview on the right updates as you type."
           clearChatImages();
 
           if (result.success) {
+            chatMessages[aiMsgIndex].thinking = false;
             chatMessages[aiMsgIndex].content = result.content;
+            chatMessages[aiMsgIndex].image = result.image;
             renderChatMessages();
             saveChatSession();
           } else {
@@ -3406,7 +3485,10 @@ Type markdown here, preview on the right updates as you type."
           const contentDiv = document.createElement('div');
           contentDiv.className = 'chat-message-content';
 
-          if (msg.role === 'ai' && msg.content) {
+          // Show thinking indicator
+          if (msg.thinking) {
+            contentDiv.innerHTML = '<div class="thinking-indicator">Thinking<span class="thinking-dots"></span></div>';
+          } else if (msg.role === 'ai' && msg.content) {
             // Parse markdown for AI messages
             try {
               contentDiv.innerHTML = marked.parse(msg.content);
@@ -3423,10 +3505,25 @@ Type markdown here, preview on the right updates as you type."
             contentDiv.textContent = msg.content;
           }
 
+          // Add image if present
+          if (msg.image) {
+            const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'generated-image';
+            imageDiv.innerHTML = `
+              <img src="${imageDataUrl}" alt="Generated image" />
+              <div class="image-actions">
+                <button class="image-action-btn" onclick="downloadChatImage(${index})">Download</button>
+                <button class="image-action-btn" onclick="openChatImageInTab(${index})">Open in tab</button>
+              </div>
+            `;
+            contentDiv.appendChild(imageDiv);
+          }
+
           const actionsDiv = document.createElement('div');
           actionsDiv.className = 'chat-message-actions';
 
-          if (msg.role === 'ai') {
+          if (msg.role === 'ai' && !msg.thinking) {
             actionsDiv.innerHTML = `
               <button class="chat-message-action-btn" onclick="copyChatMessage(${index})">
                 <i data-lucide="copy" width="12" height="12"></i>
@@ -3441,7 +3538,7 @@ Type markdown here, preview on the right updates as you type."
 
           messageDiv.appendChild(headerDiv);
           messageDiv.appendChild(contentDiv);
-          if (msg.role === 'ai') {
+          if (msg.role === 'ai' && !msg.thinking) {
             messageDiv.appendChild(actionsDiv);
           }
 
@@ -3467,12 +3564,52 @@ Type markdown here, preview on the right updates as you type."
         }
       };
 
+      // Download chat image
+      window.downloadChatImage = function(index) {
+        const msg = chatMessages[index];
+        if (msg?.image) {
+          const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          const link = document.createElement('a');
+          link.href = imageDataUrl;
+          link.download = `generated-image-${Date.now()}.png`;
+          link.click();
+          showToast('Image downloaded');
+        }
+      };
+
+      // Open chat image in new tab
+      window.openChatImageInTab = function(index) {
+        const msg = chatMessages[index];
+        if (msg?.image) {
+          const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          window.open(imageDataUrl, '_blank');
+        }
+      };
+
       // Add chat message to note
       window.addChatMessageToNote = async function(index) {
         const msg = chatMessages[index];
         if (!msg) return;
 
         const currentMode = await storage.get(KEY_MODE) || 'rich';
+
+        // Handle image
+        if (msg.image) {
+          const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          if (currentMode === 'rich') {
+            rich.innerHTML += `<br><img src="${imageDataUrl}" style="max-width: 100%; border-radius: 8px;" />`;
+            rich.dataset.hasContent = 'true';
+            await saveRich();
+          } else {
+            mdInput.value += `\n\n![Generated Image](${imageDataUrl})\n`;
+            updateMarkdownPreview();
+            await saveMarkdown();
+          }
+          showToast('Image added to note');
+          return;
+        }
+
+        // Handle text content
         const content = msg.content;
 
         if (currentMode === 'rich') {
