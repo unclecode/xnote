@@ -859,6 +859,80 @@
         color: var(--accent);
       }
 
+      /* AI Selection Context Card */
+      .ai-selection-context {
+        margin: 8px 12px 0 12px;
+        padding: 8px 10px;
+        background: var(--bg-elevated-soft);
+        border-left: 3px solid var(--accent);
+        border-radius: 6px;
+        max-height: 0;
+        overflow: hidden;
+        opacity: 0;
+        transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
+      }
+
+      .ai-selection-context.has-selection {
+        max-height: 150px;
+        opacity: 1;
+        margin-bottom: 8px;
+      }
+
+      .ai-context-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .ai-context-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .ai-context-remove {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0 2px;
+        line-height: 1;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+      }
+
+      .ai-context-remove:hover {
+        opacity: 1;
+        color: var(--accent);
+      }
+
+      .ai-context-content {
+        font-size: 12px;
+        color: var(--text-main);
+        line-height: 1.5;
+        max-height: 80px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .ai-context-content::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .ai-context-content::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .ai-context-content::-webkit-scrollbar-thumb {
+        background: var(--border-subtle);
+        border-radius: 2px;
+      }
+
       .ai-image-thumbnails {
         display: flex;
         gap: 8px;
@@ -1277,6 +1351,13 @@ Type markdown here, preview on the right updates as you type."
           <option value="models/gemini-1.5-pro-latest">Gemini 1.5 Pro</option>
         </select>
         <button class="ai-close-btn" id="ai-close-btn">&times;</button>
+      </div>
+      <div id="ai-selection-context" class="ai-selection-context">
+        <div class="ai-context-header">
+          <span class="ai-context-label">Selected text:</span>
+          <button class="ai-context-remove" id="ai-context-remove-btn">&times;</button>
+        </div>
+        <div class="ai-context-content" id="ai-context-content"></div>
       </div>
       <div id="ai-image-thumbnails" class="ai-image-thumbnails"></div>
       <textarea id="ai-prompt-input" class="ai-prompt-input" placeholder="Ask AI to help with your note..." rows="1"></textarea>
@@ -1863,6 +1944,13 @@ Type markdown here, preview on the right updates as you type."
       let aiRetryCount = 0;
       const MAX_AI_RETRIES = 3;
 
+      // Selection state for Phase 1.5
+      let aiSelectedText = '';
+      let aiSelectionRange = null; // For rich mode
+      let aiSelectionStart = null; // For markdown mode
+      let aiSelectionEnd = null; // For markdown mode
+      let aiSelectionMode = null; // 'rich' or 'md'
+
       // AI DOM Elements
       const aiSettingsModal = document.getElementById('ai-settings-modal');
       const aiSettingsBtn = document.getElementById('ai-settings-btn');
@@ -1880,6 +1968,9 @@ Type markdown here, preview on the right updates as you type."
       const aiSendBtn = document.getElementById('ai-send-btn');
       const aiSendBtnText = aiSendBtn.querySelector('.ai-btn-text');
       const aiImageThumbnails = document.getElementById('ai-image-thumbnails');
+      const aiSelectionContext = document.getElementById('ai-selection-context');
+      const aiContextContent = document.getElementById('ai-context-content');
+      const aiContextRemoveBtn = document.getElementById('ai-context-remove-btn');
 
       const toolbar = document.querySelector('.toolbar');
 
@@ -1952,6 +2043,52 @@ Type markdown here, preview on the right updates as you type."
         }
       }
 
+      // Selection Context Functions
+      function captureSelection() {
+        const currentMode = rich.classList.contains('hidden') ? 'md' : 'rich';
+
+        if (currentMode === 'rich') {
+          const selection = window.getSelection();
+          if (selection && selection.toString().trim()) {
+            aiSelectedText = selection.toString().trim();
+            aiSelectionRange = selection.getRangeAt(0).cloneRange();
+            aiSelectionMode = 'rich';
+            return true;
+          }
+        } else {
+          const start = mdInput.selectionStart;
+          const end = mdInput.selectionEnd;
+          if (start !== end) {
+            aiSelectedText = mdInput.value.substring(start, end).trim();
+            aiSelectionStart = start;
+            aiSelectionEnd = end;
+            aiSelectionMode = 'md';
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      function showSelectionContext() {
+        if (aiSelectedText) {
+          aiContextContent.textContent = aiSelectedText;
+          aiSelectionContext.classList.add('has-selection');
+          aiPromptInput.placeholder = 'How should I transform this text?';
+        }
+      }
+
+      function clearSelectionContext() {
+        aiSelectedText = '';
+        aiSelectionRange = null;
+        aiSelectionStart = null;
+        aiSelectionEnd = null;
+        aiSelectionMode = null;
+        aiContextContent.textContent = '';
+        aiSelectionContext.classList.remove('has-selection');
+        aiPromptInput.placeholder = 'Ask AI to help with your note...';
+      }
+
       // Toggle Floating Input
       function toggleAIFloatingInput() {
         if (aiFloatingInput.classList.contains('visible')) {
@@ -1968,11 +2105,19 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
+        // Try to capture selection
+        const hasSelection = captureSelection();
+
         aiFloatingInput.classList.add('visible');
         aiPromptInput.focus();
 
         // Set model selector to default
         aiModelSelector.value = aiSettings.defaultModel;
+
+        // Show selection context if text was selected
+        if (hasSelection) {
+          showSelectionContext();
+        }
       }
 
       function closeAIFloatingInput() {
@@ -1982,6 +2127,7 @@ Type markdown here, preview on the right updates as you type."
         aiSendBtn.classList.remove('visible', 'generating');
         aiSendBtnText.textContent = 'Generate →';
         clearAIImages();
+        clearSelectionContext();
       }
 
       // Handle AI Prompt Input
@@ -2078,18 +2224,25 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
-        // Get current note content
+        // Get current note content or use selected text
         const currentMode = await storage.get(KEY_MODE) || 'rich';
-        let noteContent = '';
-        if (currentMode === 'rich') {
-          noteContent = rich.innerText.trim();
+        let contentToSend = '';
+
+        // Phase 1.5: Use selected text if available, otherwise use full note
+        if (aiSelectedText) {
+          contentToSend = aiSelectedText;
         } else {
-          noteContent = mdInput.value.trim();
+          // Original Phase 1 behavior: use full note
+          if (currentMode === 'rich') {
+            contentToSend = rich.innerText.trim();
+          } else {
+            contentToSend = mdInput.value.trim();
+          }
         }
 
-        // Combine note content with user prompt
-        const fullPrompt = noteContent
-          ? `${noteContent}\n\n${userPrompt}`
+        // Combine content with user prompt
+        const fullPrompt = contentToSend
+          ? `${contentToSend}\n\n${userPrompt}`
           : userPrompt;
 
         isAIGenerating = true;
@@ -2143,22 +2296,63 @@ Type markdown here, preview on the right updates as you type."
           if (result.success) {
             let contentToInject = result.content;
 
-            // Inject result into editor
-            if (mode === 'rich') {
-              // Parse markdown to HTML for rich mode
-              try {
-                const htmlContent = marked.parse(contentToInject);
-                rich.innerHTML = htmlContent;
-                rich.dataset.hasContent = 'true';
-              } catch (e) {
-                // Fallback to raw content if markdown parsing fails
-                rich.innerHTML = contentToInject;
+            // Phase 1.5: Replace selection if available, otherwise replace entire note
+            if (aiSelectedText && aiSelectionMode) {
+              // Replace only the selected text
+              if (aiSelectionMode === 'rich' && aiSelectionRange) {
+                // Rich mode: Replace selection using Range API
+                try {
+                  aiSelectionRange.deleteContents();
+
+                  // Parse markdown to HTML for rich mode
+                  const htmlContent = marked.parse(contentToInject);
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = htmlContent;
+
+                  // Insert all nodes from the temp div
+                  const fragment = document.createDocumentFragment();
+                  while (tempDiv.firstChild) {
+                    fragment.appendChild(tempDiv.firstChild);
+                  }
+                  aiSelectionRange.insertNode(fragment);
+
+                  rich.dataset.hasContent = 'true';
+                  await saveRich();
+                } catch (e) {
+                  console.error('Error replacing selection in rich mode:', e);
+                  showToast('Error replacing selection');
+                }
+              } else if (aiSelectionMode === 'md' && aiSelectionStart !== null && aiSelectionEnd !== null) {
+                // Markdown mode: Replace text between selectionStart and selectionEnd
+                const before = mdInput.value.substring(0, aiSelectionStart);
+                const after = mdInput.value.substring(aiSelectionEnd);
+                mdInput.value = before + contentToInject + after;
+
+                // Set cursor position after inserted content
+                const newCursorPos = aiSelectionStart + contentToInject.length;
+                mdInput.setSelectionRange(newCursorPos, newCursorPos);
+
+                updateMarkdownPreview();
+                await saveMarkdown();
               }
-              await saveRich();
             } else {
-              mdInput.value = contentToInject;
-              updateMarkdownPreview();
-              await saveMarkdown();
+              // Original Phase 1 behavior: Replace entire note
+              if (mode === 'rich') {
+                // Parse markdown to HTML for rich mode
+                try {
+                  const htmlContent = marked.parse(contentToInject);
+                  rich.innerHTML = htmlContent;
+                  rich.dataset.hasContent = 'true';
+                } catch (e) {
+                  // Fallback to raw content if markdown parsing fails
+                  rich.innerHTML = contentToInject;
+                }
+                await saveRich();
+              } else {
+                mdInput.value = contentToInject;
+                updateMarkdownPreview();
+                await saveMarkdown();
+              }
             }
 
             closeAIFloatingInput();
@@ -2211,6 +2405,7 @@ Type markdown here, preview on the right updates as you type."
 
       // Event Listeners for AI Floating Input
       aiCloseBtn.addEventListener('click', closeAIFloatingInput);
+      aiContextRemoveBtn.addEventListener('click', clearSelectionContext);
       aiSendBtn.addEventListener('click', () => {
         if (aiSendBtn.classList.contains('generating')) {
           stopAIGeneration();
