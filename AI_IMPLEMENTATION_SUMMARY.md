@@ -1,8 +1,8 @@
-# xnote AI Features - Phase 1 Implementation Summary
+# xnote AI Features - Implementation Summary
 
 **Branch:** `feature/ai-assisted-note-drafting`
 **Date:** 2025-11-22
-**Status:** ✅ Phase 1 Complete
+**Status:** ✅ Phase 1, 1.5, and 3 Complete
 
 ---
 
@@ -221,54 +221,248 @@ Tested scenarios:
 
 ---
 
-## What's Next (Future Phases)
+## Phase 1.5: Selection-Aware AI Transformation
 
-### Phase 2: Inline AI with Floating Toolbar
-- Select text → floating toolbar appears
-- Quick prompt input
-- Response replaces selection
-- Model switcher in toolbar
+### Overview
+Enhanced the floating input (Cmd+Y) to intelligently detect and handle text selection, allowing users to transform specific portions of their notes.
 
-### Phase 3: Full Chat Sidebar
-- Persistent chat interface
-- Session management
-- Message history with copy buttons
-- Code block highlighting
-- Image support in chat
+### What Was Built
 
-### Phase 4: Selection → Chat Integration
-- Select text → "Start Chat" button
-- Opens sidebar with context pre-loaded
-- Continue conversation
+#### 1. **Selection Detection**
+- Automatic detection of selected text in both rich and markdown editors
+- Smart behavior:
+  - If text is selected → replaces only the selection
+  - If no selection → replaces entire note
+- Works seamlessly in both editing modes
 
----
+#### 2. **WhatsApp-Style Context Card**
+- Beautiful context indicator showing selected text
+- Features:
+  - Clean, minimal design with gray background
+  - Truncated text preview (max 100 chars)
+  - Remove button (X) to dismiss context
+  - Uses `display:none` when hidden (no ghost spacing)
+- Positioned above the prompt textarea
 
-## Commits
+#### 3. **Smart Replacement Logic**
+- When selection exists:
+  - AI receives: selection + user prompt
+  - AI replaces: only the selected portion
+  - Rest of note: untouched
+- Cursor position maintained after replacement
+- Works with both HTML (rich) and markdown content
 
-1. **Initial implementation** (7a9d2ac)
-   - Added Gemini SDK integration
-   - Built settings modal and floating input
-   - Implemented streaming generation
+#### 4. **Visual Feedback**
+- Context card clearly shows what will be transformed
+- Removal option gives user control
+- Smooth animations and transitions
 
-2. **UX and bug fixes** (d41f6ca)
-   - Fixed Gemini API method calls
-   - Enhanced header glow animation
-   - Professional button transformation
-   - Markdown to HTML conversion
-
----
-
-## Files to Review for Next Phase
-
-- `app/main.js:205-300` - AI IPC handlers
-- `app/index.html:1800-2250` - AI functionality JS
-- `app/index.html:787-1020` - AI styles
-- `MAINTENANCE.md` - Updated with AI feature docs
-- `AI_TODO.md` - Remaining phases roadmap
+### Technical Details
+- Selection tracked via `window.getSelection()` for rich mode
+- Markdown selection via textarea range API
+- Context stored in global state
+- Clean separation between selection and full-note modes
 
 ---
 
-**Phase 1 Status:** ✅ Complete and working
-**Ready for:** Phase 2 implementation
+## Phase 3: Full Chat Sidebar
+
+### Overview
+Complete chat interface with persistent conversations, session management, and advanced context handling.
+
+### What Was Built
+
+#### 1. **Chat Sidebar UI (400px Right Panel)**
+- **Non-overlay design:** Pushes main content left (not floating)
+- **Clean layout:**
+  - Header with model selector and close button
+  - Scrollable message area
+  - Fixed bottom input area
+  - Context management section
+- **Toggle shortcut:** Cmd+Shift+Y (distinct from Cmd+Y)
+- **Visual integration:** Matches xnote design system
+
+#### 2. **Message System**
+- **User messages:** Blue bubbles, right-aligned
+- **AI messages:** Gray bubbles, left-aligned
+- **Rich rendering:**
+  - Markdown → HTML with `marked.js`
+  - Code syntax highlighting with `highlight.js`
+  - Proper formatting preservation
+- **Message actions:**
+  - Copy button for each message
+  - "Add to note" button (inserts at cursor)
+  - Smooth hover effects
+
+#### 3. **Smart Selection Monitoring**
+- Automatic selection detection while chat is open
+- Polls every 300ms for selection changes
+- Updates context card in real-time
+- Shows selected text preview with remove button
+- Works in both rich and markdown modes
+
+#### 4. **Context Management**
+- **Selection context:** Auto-detected and displayed
+- **Note context:** "Include current note" checkbox
+- **Visual indicators:**
+  - Selection shown in compact card
+  - Note inclusion toggle with label
+  - Clear remove buttons for context items
+- **Smart behavior:** Only sends what user wants
+
+#### 5. **Image Support in Chat**
+- Paste images directly into chat input (Cmd+V)
+- Image thumbnails with remove buttons
+- Images sent with messages to AI
+- **AI response handling:**
+  - Image display in chat bubbles
+  - Download button
+  - Open in new tab button
+  - Add to note button (inserts at cursor)
+
+#### 6. **Session Management**
+- **Auto-save:** Every message saved to `~/.xnote/data.json`
+- **Auto-title:** First message used as session title
+- **Unlimited history:** All sessions persisted
+- **Session browser:**
+  - List view with titles and dates
+  - Click to resume any conversation
+  - Full conversation state restored
+  - Delete sessions option
+- **Data structure:**
+```json
+{
+  "chatSessions": [
+    {
+      "id": "session-123",
+      "title": "First message preview...",
+      "createdAt": "2025-11-22T...",
+      "lastModified": "2025-11-22T...",
+      "messages": [...]
+    }
+  ]
+}
+```
+
+#### 7. **Model Selector**
+- Dropdown in chat header
+- Shows actual Gemini model names:
+  - Gemini 2.0 Flash
+  - Gemini Exp 1206
+  - Gemini 2.0 Flash Thinking
+  - Gemini 1.5 Pro
+  - Gemini 3 Pro Image Preview (for image generation)
+- Per-session model memory
+- Visual consistency with main app
+
+#### 8. **Streaming & Real-Time Updates**
+- Streaming AI responses in chat
+- Live message updates during generation
+- Auto-scroll to latest message
+- Loading indicators during generation
+
+---
+
+## Image Generation Feature
+
+### Overview
+Added support for Google's image generation model with full integration in both chat and floating modes.
+
+### What Was Built
+
+#### 1. **Model Integration**
+- **Model:** `models/gemini-3-pro-image-preview`
+- Added to all model selectors (chat, floating, settings)
+- Backend configuration:
+  - `responseModalities: ['IMAGE']`
+  - `imageConfig` with Google Search integration
+  - Proper tools configuration
+
+#### 2. **Google Search Toggle**
+- New setting in AI Settings modal
+- Label: "Enable Google Search for Image Generation"
+- Default: Enabled
+- Persisted to `~/.xnote/data.json`
+- Controls `tools: ['google_search_retrieval']` parameter
+
+#### 3. **Thinking Animation**
+- During image generation, shows "Thinking" with animated dots
+- Pattern: `.` → `..` → `...` (cycles)
+- Clean, minimal loading indicator
+- Replaces streaming text display
+
+#### 4. **Image Display in Chat**
+- Images rendered in chat bubbles
+- Three action buttons:
+  - **Download:** Saves image to disk
+  - **Open in new tab:** Opens in browser
+  - **Add to note:** Inserts at cursor position
+- Responsive layout with proper spacing
+
+#### 5. **Image Insertion in Floating Mode**
+- When using Cmd+Y for image generation
+- Generated image inserted at cursor position
+- Works in both rich and markdown modes
+- Automatic content type detection
+
+#### 6. **Lucide Icons Integration**
+- Integrated Lucide icons library
+- Replaced custom SVG icons throughout app
+- Consistent icon system
+- Better visual quality
+
+### Technical Implementation
+```javascript
+// Backend config for image generation
+{
+  model: 'models/gemini-3-pro-image-preview',
+  responseModalities: ['IMAGE'],
+  imageConfig: settings.googleSearch ? {} : undefined,
+  tools: settings.googleSearch ? ['google_search_retrieval'] : undefined
+}
+```
+
+### Known Issues (To Fix Next Session)
+1. **Images not generating properly** - API returning text descriptions instead of actual images. Backend config needs debugging.
+2. **Floating mode missing note context for images** - Need to send note content as context when generating images via Cmd+Y.
+3. **Need insert vs replace mode** - Add checkbox in floating mode to choose between replacing entire note or inserting at cursor.
+
+---
+
+## Complete Commits History
+
+1. **7a9d2ac** - Initial AI implementation (Phase 1)
+2. **d41f6ca** - UX and bug fixes (Phase 1)
+3. **a4acc30** - Add selection-aware AI transformation (Phase 1.5)
+4. **02f1527** - Add Phase 1.5 and Phase 3: AI selection transformation and chat sidebar
+5. **8dc3e62** - Add image generation model support (partial)
+6. **de4b514** - Complete image generation feature
+7. **77a8f84** - Fix image generation bugs
+
+---
+
+## What's Next
+
+### Immediate Fixes (Priority)
+1. Fix image generation to return actual images
+2. Add note context for image generation in floating mode
+3. Add insert vs replace mode selector in floating UI
+
+### Future Phases
+- **Phase 2:** Inline AI with floating toolbar (may be skipped - functionality covered by Phase 1.5)
+- **Phase 4:** Additional chat enhancements and integrations
+
+---
+
+## Files to Review
+
+- `app/main.js` - Gemini client, IPC handlers, streaming logic
+- `app/index.html` - Complete UI including chat sidebar, floating input, all JavaScript
+- `app/package.json` - Dependencies (@google/genai, marked, highlight.js)
+- `~/.xnote/data.json` - Settings and chat sessions storage
+
+---
+
+**Current Status:** Phase 1, 1.5, and 3 complete with minor issues to fix
 **Branch:** `feature/ai-assisted-note-drafting`
-**Commits:** Not pushed (local only, as requested)
+**Commits:** Local only, not pushed

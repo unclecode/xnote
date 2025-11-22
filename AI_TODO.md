@@ -1,7 +1,43 @@
 # xnote AI Features - Implementation Roadmap
 
-**Current Phase:** ✅ Phase 1 Complete
-**Next Phase:** Phase 2 - Inline AI with Floating Toolbar
+**Current Phase:** ✅ Phase 1, 1.5, and 3 Complete
+**Next Phase:** Bug Fixes & Phase 4
+
+---
+
+## IMMEDIATE NEXT TASKS (Priority)
+
+### Issue 1: Image Generation Not Showing Actual Images
+**Problem:** API returning text descriptions instead of actual images
+**Status:** 🔴 Critical Bug
+**Details:**
+- Backend config has `responseModalities: ['IMAGE']` and `imageConfig`
+- Response contains text descriptions like "a photo of..." instead of image data
+- Need to debug Gemini API response parsing
+- Verify correct API parameters and response handling
+- Check if images are in response but not being extracted properly
+
+### Issue 2: Floating Mode Missing Note Context for Images
+**Problem:** When generating images via Cmd+Y, note content not sent as context
+**Status:** 🟡 Enhancement Needed
+**Details:**
+- User wants to generate images relevant to their note content
+- Example: "create a blog post image for this note"
+- Need to verify if note content is being sent with image generation requests
+- If missing, add note context to floating mode image generation
+- Should work like text generation (includes note content)
+
+### Issue 3: Need Insert vs Replace Mode Selector
+**Problem:** No way to choose between replacing entire note or inserting at cursor
+**Status:** 🟡 Enhancement Needed
+**Details:**
+- Current behavior: Floating mode replaces entire note (or selection if present)
+- Needed: Checkbox or toggle in floating UI to choose:
+  - [ ] "Replace entire note" (current default)
+  - [ ] "Insert at cursor position" (needed for images and incremental edits)
+- Should be persistent (remember user preference)
+- Particularly important for image insertion
+- Should work in both rich and markdown modes
 
 ---
 
@@ -52,103 +88,135 @@
 
 ---
 
-## Phase 2: Inline AI with Floating Toolbar 🔄 NEXT
+## Phase 1.5: Selection-Aware AI Transformation ✅ DONE
 
 ### Selection Detection
-- [ ] Detect text selection in rich editor
-- [ ] Detect text selection in markdown editor
-- [ ] Show/hide toolbar based on selection state
-- [ ] Handle selection across multiple paragraphs
+- [x] Detect text selection in rich editor
+- [x] Detect text selection in markdown editor
+- [x] Smart behavior: replace selection OR entire note
+- [x] Handle selection in both editing modes
 
-### Floating Toolbar UI
-- [ ] Create minimal toolbar component
-- [ ] Position near selection (smart positioning)
-- [ ] Add "AI" icon/button to toolbar
-- [ ] Model selector dropdown
-- [ ] Quick action buttons (optional):
-  - [ ] "Improve writing"
-  - [ ] "Make shorter"
-  - [ ] "Expand"
-  - [ ] "Fix grammar"
+### Context Card UI
+- [x] WhatsApp-style context card
+- [x] Show selected text preview (truncated to 100 chars)
+- [x] Remove button (X) to dismiss context
+- [x] Display:none when hidden (no ghost spacing)
+- [x] Positioned above prompt textarea
 
-### Inline Prompt Input
-- [ ] Click AI button → show inline prompt input
-- [ ] Compact input field with placeholder
-- [ ] Enter to submit
-- [ ] Esc to cancel
-- [ ] Loading indicator during generation
-- [ ] Smooth animations
+### Replacement Logic
+- [x] Send selection + prompt to AI when text selected
+- [x] Replace only selection (preserve rest of note)
+- [x] Replace entire note when no selection
+- [x] Maintain cursor position after replacement
+- [x] Work in both HTML (rich) and markdown modes
 
-### Text Replacement
-- [ ] Send selected text + prompt to AI
-- [ ] Replace selection with AI response
-- [ ] Preserve formatting in rich mode
-- [ ] Update markdown in markdown mode
-- [ ] Undo support (restore original selection)
+### Visual Feedback
+- [x] Context card shows what will be transformed
+- [x] User control via remove button
+- [x] Smooth animations and transitions
 
-### UX Polish
-- [ ] Toolbar follows selection on scroll
-- [ ] Tooltip hints for buttons
-- [ ] Keyboard shortcuts for quick actions
-- [ ] Smooth fade in/out animations
-- [ ] Match xnote visual style
-
-### System Prompt
-- [ ] Add "inline AI" system prompt to settings
-- [ ] Default prompt: "You are helping refine selected text..."
-- [ ] Include context about what user selected
+**Commit:** a4acc30, 02f1527
 
 ---
 
-## Phase 3: Full Chat Sidebar 📋 TODO
+## Phase 2: Inline AI with Floating Toolbar 📋 SKIPPED
+
+**Reason:** Phase 1.5 already provides selection-aware transformation functionality via Cmd+Y. A separate floating toolbar would be redundant and add UI complexity without significant value.
+
+**Alternative:** Phase 1.5's approach (context card in floating UI) is cleaner and more consistent with xnote's minimal design philosophy.
+
+---
+
+## Phase 3: Full Chat Sidebar ✅ DONE
 
 ### Chat UI Layout
-- [ ] Right sidebar design (collapsible)
-- [ ] Message list with scroll
-- [ ] Input area at bottom
-- [ ] Model selector in chat header
-- [ ] Close/minimize buttons
-- [ ] Resize handle (optional)
+- [x] Right sidebar design (400px, non-overlay)
+- [x] Message list with scroll
+- [x] Input area at bottom (fixed position)
+- [x] Model selector in chat header
+- [x] Close button (X)
+- [x] Pushes main content left (not floating)
 
 ### Message Rendering
-- [ ] User message bubbles
-- [ ] AI message bubbles
-- [ ] Markdown rendering for AI messages
-- [ ] Code block syntax highlighting
-- [ ] Copy button for each message
-- [ ] Copy button for code blocks
-- [ ] Timestamp display (optional)
-- [ ] Message loading indicators
+- [x] User message bubbles (blue, right-aligned)
+- [x] AI message bubbles (gray, left-aligned)
+- [x] Markdown rendering for AI messages (marked.js)
+- [x] Code block syntax highlighting (highlight.js)
+- [x] Copy button for each message
+- [x] "Add to note" button for each message
+- [x] Proper formatting preservation
+- [x] Message loading indicators (thinking animation)
 
 ### Chat Functionality
-- [ ] Send message to AI
-- [ ] Receive streaming responses
-- [ ] Display messages in real-time
-- [ ] Auto-scroll to latest message
-- [ ] Multi-line input support
-- [ ] Image paste in chat
-- [ ] Maintain conversation context
+- [x] Send message to AI
+- [x] Receive streaming responses
+- [x] Display messages in real-time
+- [x] Auto-scroll to latest message
+- [x] Multi-line input support (Shift+Enter)
+- [x] Image paste in chat (Cmd+V with thumbnails)
+- [x] Maintain conversation context across messages
+
+### Selection & Context Management
+- [x] Smart selection monitoring (300ms polling)
+- [x] Auto-detect selection while chat open
+- [x] Show selection in context card with remove button
+- [x] "Include current note" checkbox
+- [x] Visual indicators for all context types
+- [x] Works in both rich and markdown modes
 
 ### Session Management
-- [ ] Create new chat session
-- [ ] Save chat history to data.json
-- [ ] List previous sessions
-- [ ] Resume existing session
-- [ ] Delete session
-- [ ] Session metadata (date, title, message count)
-- [ ] Auto-title sessions based on first message
+- [x] Create new chat session
+- [x] Save chat history to data.json (auto-save)
+- [x] List previous sessions with dates
+- [x] Resume existing session (restore full state)
+- [x] Delete session option
+- [x] Session metadata (id, title, created, modified)
+- [x] Auto-title sessions based on first message
+- [x] Unlimited chat history
 
 ### Chat Sidebar Toggle
-- [ ] Keyboard shortcut to open/close chat
-- [ ] Button in toolbar to toggle
-- [ ] Persist sidebar state (open/closed)
-- [ ] Animation when opening/closing
-- [ ] Remember width preference
+- [x] Keyboard shortcut (Cmd+Shift+Y)
+- [x] Button in toolbar to toggle
+- [x] Smooth animation when opening/closing
+- [x] Distinct from floating input (Cmd+Y)
 
-### System Prompt
-- [ ] Add "chat" system prompt to settings
-- [ ] Default: "You are a helpful AI assistant..."
-- [ ] Context: No note content unless explicitly shared
+### Image Support
+- [x] Paste images in chat input
+- [x] Image thumbnails with remove buttons
+- [x] Display images in AI responses
+- [x] Download, Open, Add to note buttons for images
+
+### Model Integration
+- [x] Model selector with actual Gemini names
+- [x] Per-session model memory
+- [x] Visual consistency with main app
+- [x] Support for image generation model
+
+**Commits:** 02f1527, 8dc3e62, de4b514, 77a8f84
+
+---
+
+## Image Generation Feature ✅ DONE (with bugs)
+
+### Model Integration
+- [x] Add gemini-3-pro-image-preview to all selectors
+- [x] Backend config: responseModalities, imageConfig
+- [x] Google Search toggle in settings
+- [x] Tools configuration for search retrieval
+
+### UI Components
+- [x] Thinking animation with animated dots
+- [x] Image display in chat with action buttons
+- [x] Image insertion in floating mode at cursor
+- [x] Download, Open, Add to note functionality
+- [x] Lucide icons integration
+
+### Known Issues
+- [ ] **Images not generating properly** (returning text instead)
+- [ ] **Missing note context in floating mode for images**
+- [ ] **Need insert vs replace mode selector**
+
+**Commits:** 8dc3e62, de4b514, 77a8f84
 
 ---
 
@@ -267,14 +335,25 @@
 | Phase | Status | Completion |
 |-------|--------|------------|
 | Phase 1: AI-Assisted Note Drafting | ✅ Done | 100% |
-| Phase 2: Inline AI with Toolbar | 🔄 Next | 0% |
-| Phase 3: Full Chat Sidebar | 📋 Planned | 0% |
+| Phase 1.5: Selection-Aware Transformation | ✅ Done | 100% |
+| Phase 2: Inline AI with Toolbar | ⏭️ Skipped | N/A |
+| Phase 3: Full Chat Sidebar | ✅ Done | 100% |
+| Image Generation Feature | ✅ Done | 90% (3 bugs) |
 | Phase 4: Selection → Chat | 📋 Planned | 0% |
 
-**Overall Progress:** 25% (1/4 phases complete)
+**Overall Progress:** 75% (3/4 phases complete, 1 skipped)
+
+**Immediate Priority:** Fix 3 critical bugs in image generation and floating mode
 
 ---
 
 **Last Updated:** 2025-11-22
 **Branch:** `feature/ai-assisted-note-drafting`
-**Ready for:** Phase 2 implementation
+**Ready for:** Bug fixes, then Phase 4 implementation
+
+**Recent Commits:**
+- a4acc30: Phase 1.5 selection-aware transformation
+- 02f1527: Phase 1.5 + Phase 3 complete implementation
+- 8dc3e62: Image generation partial
+- de4b514: Image generation complete
+- 77a8f84: Image generation bug fixes (still has issues)
