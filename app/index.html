@@ -770,6 +770,18 @@
         min-height: 80px;
       }
 
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .checkbox-label input[type="checkbox"] {
+        cursor: pointer;
+      }
+
       .help-text {
         display: block;
         font-size: 11px;
@@ -1705,6 +1717,7 @@ Type markdown here, preview on the right updates as you type."
               <option value="models/gemini-exp-1206">gemini-exp-1206</option>
               <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
               <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+              <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
             </select>
             <button class="chat-icon-btn" id="chat-close-btn" title="Close Chat">
               <i data-lucide="x" width="16" height="16"></i>
@@ -1893,7 +1906,14 @@ Type markdown here, preview on the right updates as you type."
               <option value="models/gemini-exp-1206">gemini-exp-1206</option>
               <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
               <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+              <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
             </select>
+          </div>
+          <div class="setting-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ai-enable-search" checked />
+              <span>Enable Google Search</span>
+            </label>
           </div>
           <div class="setting-group">
             <label for="ai-system-prompt">System Prompt (Note Drafting)</label>
@@ -1915,6 +1935,7 @@ Type markdown here, preview on the right updates as you type."
           <option value="models/gemini-exp-1206">gemini-exp-1206</option>
           <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
           <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+          <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
         </select>
         <button class="ai-close-btn" id="ai-close-btn">&times;</button>
       </div>
@@ -2501,7 +2522,8 @@ Type markdown here, preview on the right updates as you type."
         'models/gemini-2.0-flash-exp',
         'models/gemini-exp-1206',
         'models/gemini-2.0-flash-thinking-exp-1219',
-        'models/gemini-1.5-pro-latest'
+        'models/gemini-1.5-pro-latest',
+        'models/gemini-3-pro-image-preview'
       ];
 
       // AI State
@@ -2526,6 +2548,7 @@ Type markdown here, preview on the right updates as you type."
       const aiSettingsSaveBtn = document.getElementById('ai-settings-save-btn');
       const aiApiKeyInput = document.getElementById('ai-api-key');
       const aiModelSelect = document.getElementById('ai-model-select');
+      const aiEnableSearch = document.getElementById('ai-enable-search');
       const aiSystemPromptInput = document.getElementById('ai-system-prompt');
 
       const aiFloatingInput = document.getElementById('ai-floating-input');
@@ -2562,7 +2585,8 @@ Type markdown here, preview on the right updates as you type."
           aiSettings = {
             apiKey: '',
             defaultModel: AI_MODELS[0],
-            systemPrompt: DEFAULT_AI_SYSTEM_PROMPT
+            systemPrompt: DEFAULT_AI_SYSTEM_PROMPT,
+            enableSearch: true
           };
         }
       }
@@ -2571,6 +2595,7 @@ Type markdown here, preview on the right updates as you type."
       function openAISettings() {
         aiApiKeyInput.value = aiSettings?.apiKey || '';
         aiModelSelect.value = aiSettings?.defaultModel || AI_MODELS[0];
+        aiEnableSearch.checked = aiSettings?.enableSearch !== false;
         aiSystemPromptInput.value = aiSettings?.systemPrompt || DEFAULT_AI_SYSTEM_PROMPT;
         aiSettingsModal.classList.add('is-visible');
       }
@@ -2594,6 +2619,7 @@ Type markdown here, preview on the right updates as you type."
         aiSettings = {
           apiKey,
           defaultModel: model,
+          enableSearch: aiEnableSearch.checked,
           systemPrompt: systemPrompt || DEFAULT_AI_SYSTEM_PROMPT
         };
 

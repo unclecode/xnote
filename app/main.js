@@ -225,6 +225,8 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
   try {
     const data = loadData();
     const systemPrompt = data.aiSettings?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+    const enableSearch = data.aiSettings?.enableSearch !== false;
+    const isImageModel = model === 'models/gemini-3-pro-image-preview';
 
     // Prepare parts for the request
     const parts = [{ text: `${systemPrompt}\n\nCurrent note:\n${content}` }];
@@ -241,31 +243,65 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
       }
     }
 
-    // Generate content with streaming using correct API
-    const response = await genAI.models.generateContentStream({
+    // Build request config
+    const requestConfig = {
       model: model,
       contents: [{
         role: 'user',
         parts: parts
       }]
-    });
+    };
+
+    // Add special config for image model
+    if (isImageModel) {
+      requestConfig.config = {
+        responseModalities: ['IMAGE', 'TEXT'],
+        imageConfig: { imageSize: '1K' }
+      };
+      if (enableSearch) {
+        requestConfig.config.tools = [{ googleSearch: {} }];
+      }
+    } else if (enableSearch) {
+      requestConfig.config = {
+        tools: [{ googleSearch: {} }]
+      };
+    }
+
+    // Generate content with streaming
+    const response = await genAI.models.generateContentStream(requestConfig);
 
     // Stream response back to renderer
     let fullText = '';
+    let imageData = null;
+
     for await (const chunk of response) {
+      // Handle text chunks
       const chunkText = chunk.text;
       if (chunkText) {
         fullText += chunkText;
-        // Send chunk to renderer
         event.sender.send('ai-content-chunk', chunkText);
+      }
+
+      // Handle image chunks
+      if (chunk.candidates?.[0]?.content?.parts?.[0]?.inlineData) {
+        const inlineData = chunk.candidates[0].content.parts[0].inlineData;
+        imageData = {
+          mimeType: inlineData.mimeType,
+          data: inlineData.data
+        };
+        event.sender.send('ai-image-chunk', imageData);
       }
     }
 
-    // Extract content from <result> tags
+    // Extract content from <result> tags for text
     const match = fullText.match(/<result>([\s\S]*?)<\/result>/);
     const extracted = match ? match[1].trim() : fullText;
 
-    return { success: true, content: extracted };
+    return {
+      success: true,
+      content: extracted,
+      image: imageData
+    };
 
   } catch (error) {
     console.error('AI generation error:', error);
