@@ -62,7 +62,7 @@ function createWindow() {
   mainWindow.loadFile('index.html');
 
   // Make window appear on all workspaces/desktops
-  mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 
   // Save window position on move/resize
   mainWindow.on('resize', () => {
@@ -135,9 +135,15 @@ function toggleWindow() {
   if (mainWindow.isVisible()) {
     mainWindow.hide();
   } else {
+    // Temporarily enable visibleOnAllWorkspaces to show on current desktop
+    mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
     mainWindow.show();
     mainWindow.focus();
     app.focus({ steal: true });
+    // Disable after showing so window doesn't follow between desktops
+    setTimeout(() => {
+      mainWindow.setVisibleOnAllWorkspaces(false);
+    }, 100);
   }
 }
 
