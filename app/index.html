@@ -1770,6 +1770,106 @@
           transform: translateX(-50%) translateY(0);
         }
       }
+
+      /* Tab bar styles */
+      .tab-bar {
+        display: flex;
+        align-items: center;
+        padding: 4px 8px;
+        background: rgba(4, 6, 18, 0.92);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        gap: 4px;
+        -webkit-app-region: no-drag;
+      }
+
+      :root[data-theme="light"] .tab-bar {
+        background: rgba(240, 235, 225, 0.95);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+
+      .tabs-container {
+        display: flex;
+        gap: 2px;
+        flex: 1;
+        overflow-x: auto;
+      }
+
+      .tabs-container::-webkit-scrollbar {
+        height: 3px;
+      }
+
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 6px;
+        background: transparent;
+        cursor: pointer;
+        font-size: 11px;
+        color: var(--text-muted);
+        max-width: 150px;
+        transition: background 100ms ease;
+      }
+
+      .tab:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      :root[data-theme="light"] .tab:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      .tab.is-active {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+      }
+
+      .tab-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .tab-close {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 13px;
+        line-height: 1;
+        padding: 0;
+        opacity: 0.5;
+      }
+
+      .tab-close:hover {
+        opacity: 1;
+        color: #ff6b6b;
+      }
+
+      .tab-new-btn {
+        background: none;
+        border: 1px solid var(--border-subtle);
+        border-radius: 4px;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 3px 8px;
+        font-size: 14px;
+      }
+
+      .tab-new-btn:hover {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+      }
+
+      .tab-unsaved::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
 </style>
   </head>
   <body>
@@ -1800,6 +1900,11 @@
           </button>
         </div>
       </header>
+
+      <div class="tab-bar" id="tab-bar">
+        <div class="tabs-container" id="tabs-container"></div>
+        <button class="tab-new-btn" id="tab-new-btn" title="New Tab">+</button>
+      </div>
 
       <div class="main-content">
       <div class="body">
@@ -2153,6 +2258,8 @@ Type markdown here, preview on the right updates as you type."
       const KEY_MODE = "mode";
       const KEY_NOTES = "notes";
       const KEY_CURRENT = "currentNote";
+      const KEY_OPEN_TABS = "openTabs";
+      const KEY_ACTIVE_TAB = "activeTab";
 
       // Storage abstraction for Electron/Browser compatibility
       const storage = {
@@ -2207,6 +2314,8 @@ Type markdown here, preview on the right updates as you type."
       const shareBtn = document.getElementById("share-btn");
       const confirmText = document.getElementById("confirm-text");
       const confirmTitle = document.getElementById("confirm-title");
+      const tabsContainer = document.getElementById("tabs-container");
+      const tabNewBtn = document.getElementById("tab-new-btn");
 
       let saveTimer = null;
       let currentNoteName = null;
@@ -2246,22 +2355,41 @@ Type markdown here, preview on the right updates as you type."
       }
 
       async function loadInitialState() {
-        const richContent = await storage.get(KEY_RICH) || "";
-        rich.innerHTML = richContent;
-        rich.dataset.hasContent = richContent.trim().length > 0;
+        // Initialize tabs
+        let tabs = await getOpenTabs();
+        if (tabs.length === 0) {
+          // Migrate from old system: create a tab for current note or a new temp tab
+          const currentNote = await storage.get(KEY_CURRENT);
+          const richContent = await storage.get(KEY_RICH) || "";
+          const mdContent = await storage.get(KEY_MD) || "";
 
-        const mdContent = await storage.get(KEY_MD) || "";
-        mdInput.value = mdContent;
-        updateMarkdownPreview();
+          if (currentNote) {
+            tabs = [{ noteName: currentNote }];
+          } else if (richContent.trim() || mdContent.trim()) {
+            // Has working content but no name - create temp tab with it
+            tabs = [{ tempId: `temp_${Date.now()}`, tempRich: richContent, tempMd: mdContent }];
+          } else {
+            tabs = [{ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "" }];
+          }
+          await setOpenTabs(tabs);
+          await setActiveTabIndex(0);
+        }
 
+        // Render tabs
+        await renderTabs();
+
+        // Load active tab content
+        const activeIndex = await getActiveTabIndex();
+        const activeTab = tabs[activeIndex];
+        await loadTabContent(activeTab);
+        currentNoteName = activeTab.noteName || null;
+
+        // Load theme and mode
         const savedTheme = await storage.get(KEY_THEME) || "dark";
         applyTheme(savedTheme, false);
 
         const savedMode = await storage.get(KEY_MODE) || "rich";
         applyMode(savedMode, false);
-
-        // Load current note name if any
-        currentNoteName = await storage.get(KEY_CURRENT) || null;
 
         setStatusSaved();
       }
@@ -2364,6 +2492,170 @@ Type markdown here, preview on the right updates as you type."
         await storage.set(KEY_NOTES, notes);
       }
 
+      // Tab management functions
+      async function getOpenTabs() {
+        return await storage.get(KEY_OPEN_TABS) || [];
+      }
+
+      async function setOpenTabs(tabs) {
+        await storage.set(KEY_OPEN_TABS, tabs);
+      }
+
+      async function getActiveTabIndex() {
+        return await storage.get(KEY_ACTIVE_TAB) || 0;
+      }
+
+      async function setActiveTabIndex(index) {
+        await storage.set(KEY_ACTIVE_TAB, index);
+      }
+
+      async function renderTabs() {
+        const tabs = await getOpenTabs();
+        const activeIndex = await getActiveTabIndex();
+
+        tabsContainer.innerHTML = tabs.map((tab, index) => {
+          const name = tab.noteName || "Untitled";
+          const isActive = index === activeIndex;
+          const isUnsaved = !tab.noteName;
+
+          return `
+            <div class="tab ${isActive ? 'is-active' : ''} ${isUnsaved ? 'tab-unsaved' : ''}" data-index="${index}">
+              <span class="tab-name">${name}</span>
+              <button class="tab-close" data-index="${index}">&times;</button>
+            </div>
+          `;
+        }).join("");
+      }
+
+      async function loadTabContent(tab) {
+        if (tab.noteName) {
+          const notes = await getNotes();
+          const note = notes.find(n => n.name === tab.noteName);
+          if (note) {
+            rich.innerHTML = note.richContent || "";
+            rich.dataset.hasContent = (note.richContent || "").trim().length > 0;
+            mdInput.value = note.mdContent || "";
+            updateMarkdownPreview();
+          }
+        } else {
+          rich.innerHTML = tab.tempRich || "";
+          rich.dataset.hasContent = (tab.tempRich || "").trim().length > 0;
+          mdInput.value = tab.tempMd || "";
+          updateMarkdownPreview();
+        }
+      }
+
+      async function saveCurrentTabContent() {
+        const tabs = await getOpenTabs();
+        const activeIndex = await getActiveTabIndex();
+        if (activeIndex < 0 || activeIndex >= tabs.length) return;
+
+        const tab = tabs[activeIndex];
+
+        if (tab.noteName) {
+          // Save to KEY_NOTES using existing function
+          await saveNoteWithName(tab.noteName);
+        } else {
+          // Save to tab's temp storage
+          tab.tempRich = rich.innerHTML;
+          tab.tempMd = mdInput.value;
+          await setOpenTabs(tabs);
+        }
+      }
+
+      async function switchToTab(newIndex) {
+        const tabs = await getOpenTabs();
+        const currentIndex = await getActiveTabIndex();
+
+        if (newIndex === currentIndex || newIndex < 0 || newIndex >= tabs.length) return;
+
+        // Auto-save current tab
+        await saveCurrentTabContent();
+
+        // Update active index
+        await setActiveTabIndex(newIndex);
+
+        // Load new tab content
+        const tab = tabs[newIndex];
+        await loadTabContent(tab);
+        currentNoteName = tab.noteName || null;
+
+        await renderTabs();
+      }
+
+      async function createNewTab() {
+        await saveCurrentTabContent();
+
+        const tabs = await getOpenTabs();
+        tabs.push({ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "" });
+        await setOpenTabs(tabs);
+
+        // Load the new tab
+        const newIndex = tabs.length - 1;
+        await setActiveTabIndex(newIndex);
+        await loadTabContent(tabs[newIndex]);
+        currentNoteName = null;
+
+        await renderTabs();
+      }
+
+      async function closeTab(index) {
+        const tabs = await getOpenTabs();
+        const tab = tabs[index];
+
+        // Warn if unsaved with content
+        if (!tab.noteName && (tab.tempRich?.trim() || tab.tempMd?.trim())) {
+          const confirmed = await showConfirm("Close unsaved note?", "Close Tab");
+          if (!confirmed) return;
+        }
+
+        tabs.splice(index, 1);
+
+        // Ensure at least one tab
+        if (tabs.length === 0) {
+          tabs.push({ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "" });
+        }
+
+        await setOpenTabs(tabs);
+
+        // Adjust active index
+        let activeIndex = await getActiveTabIndex();
+        if (index <= activeIndex) {
+          activeIndex = Math.max(0, activeIndex - 1);
+        }
+        activeIndex = Math.min(activeIndex, tabs.length - 1);
+        await setActiveTabIndex(activeIndex);
+
+        await loadTabContent(tabs[activeIndex]);
+        currentNoteName = tabs[activeIndex].noteName || null;
+        await renderTabs();
+      }
+
+      async function openNoteAsTab(noteName) {
+        await saveCurrentTabContent();
+
+        const tabs = await getOpenTabs();
+
+        // Check if already open - switch to it
+        const existingIndex = tabs.findIndex(t => t.noteName === noteName);
+        if (existingIndex >= 0) {
+          await switchToTab(existingIndex);
+          return;
+        }
+
+        // Add new tab
+        tabs.push({ noteName });
+        await setOpenTabs(tabs);
+
+        // Switch to it
+        const newIndex = tabs.length - 1;
+        await setActiveTabIndex(newIndex);
+        await loadTabContent(tabs[newIndex]);
+        currentNoteName = noteName;
+
+        await renderTabs();
+      }
+
       function formatDate(timestamp) {
         const d = new Date(timestamp);
         return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -2437,24 +2729,8 @@ Type markdown here, preview on the right updates as you type."
       }
 
       async function loadNote(name) {
-        const notes = await getNotes();
-        const note = notes.find((n) => n.name === name);
-        if (!note) return;
-
-        // Load content
-        rich.innerHTML = note.richContent || "";
-        rich.dataset.hasContent = (note.richContent || "").trim().length > 0;
-        mdInput.value = note.mdContent || "";
-        updateMarkdownPreview();
-
-        // Save to working storage
-        await storage.set(KEY_RICH, note.richContent || "");
-        await storage.set(KEY_MD, note.mdContent || "");
-
-        currentNoteName = name;
-        await storage.set(KEY_CURRENT, name);
-
         closeModal(notesModal);
+        await openNoteAsTab(name);
         setStatusSaved();
       }
 
@@ -2513,6 +2789,21 @@ Type markdown here, preview on the right updates as you type."
         await saveNotes(notes);
         currentNoteName = name;
         await storage.set(KEY_CURRENT, name);
+
+        // Update tab if it was unsaved (convert temp tab to named tab)
+        const tabs = await getOpenTabs();
+        const activeIndex = await getActiveTabIndex();
+        const activeTab = tabs[activeIndex];
+
+        if (activeTab && !activeTab.noteName) {
+          delete activeTab.tempId;
+          delete activeTab.tempRich;
+          delete activeTab.tempMd;
+          activeTab.noteName = name;
+          await setOpenTabs(tabs);
+          await renderTabs();
+        }
+
         setStatusSaved();
       }
 
@@ -2525,20 +2816,10 @@ Type markdown here, preview on the right updates as you type."
         }
       }
 
-      // New note
+      // New note - now creates a new tab
       async function createNewNote() {
-        rich.innerHTML = "";
-        rich.dataset.hasContent = "false";
-        mdInput.value = "";
-        updateMarkdownPreview();
-
-        await storage.set(KEY_RICH, "");
-        await storage.set(KEY_MD, "");
-
-        currentNoteName = null;
-        await storage.set(KEY_CURRENT, null);
-
         closeAllModals();
+        await createNewTab();
         setStatusSaved();
 
         // Focus the appropriate editor
@@ -2579,6 +2860,23 @@ Type markdown here, preview on the right updates as you type."
       helpBtn.addEventListener("click", () => openModal(helpModal));
       openBtn.addEventListener("click", openNotesModal);
       newBtn.addEventListener("click", createNewNote);
+
+      // Tab event listeners
+      tabsContainer.addEventListener("click", async (e) => {
+        const closeBtn = e.target.closest(".tab-close");
+        if (closeBtn) {
+          e.stopPropagation();
+          await closeTab(parseInt(closeBtn.dataset.index));
+          return;
+        }
+
+        const tab = e.target.closest(".tab");
+        if (tab) {
+          await switchToTab(parseInt(tab.dataset.index));
+        }
+      });
+
+      tabNewBtn.addEventListener("click", createNewTab);
 
       // Download note as markdown
       async function downloadNote() {
