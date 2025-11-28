@@ -230,6 +230,36 @@ ipcMain.handle('download-markdown', async (event, content, suggestedName) => {
   }
 });
 
+// Share note as GitHub Gist
+ipcMain.handle('share-gist', async (event, content, filename, isPublic) => {
+  const { execSync } = require('child_process');
+  const tmpFile = path.join(os.tmpdir(), filename || 'note.md');
+
+  try {
+    // Write content to temp file
+    fs.writeFileSync(tmpFile, content, 'utf8');
+
+    // Create gist using gh CLI
+    const visibility = isPublic ? '--public' : '';
+    const cmd = `gh gist create ${visibility} "${tmpFile}" 2>&1`;
+    const output = execSync(cmd, { encoding: 'utf8', timeout: 30000 });
+
+    // Extract URL from output
+    const urlMatch = output.match(/https:\/\/gist\.github\.com\/[^\s]+/);
+    if (urlMatch) {
+      return { success: true, url: urlMatch[0] };
+    }
+
+    return { success: false, error: 'Could not get gist URL' };
+  } catch (err) {
+    console.error('Error creating gist:', err);
+    return { success: false, error: err.message };
+  } finally {
+    // Clean up temp file
+    try { fs.unlinkSync(tmpFile); } catch {}
+  }
+});
+
 // App lifecycle
 app.whenReady().then(() => {
   // Hide dock icon

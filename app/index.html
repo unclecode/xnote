@@ -726,6 +726,7 @@
           <button class="toolbar-btn" id="new-btn">New</button>
           <button class="toolbar-btn" id="open-btn">Open</button>
           <button class="toolbar-btn" id="download-btn">Download</button>
+          <button class="toolbar-btn" id="share-btn">Share</button>
           <div class="toggle-group" id="mode-toggle">
             <button type="button" data-mode="rich">Rich</button>
             <button type="button" data-mode="md">Markdown</button>
@@ -868,6 +869,29 @@ Type markdown here, preview on the right updates as you type."
       </div>
     </div>
 
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="share-modal">
+      <div class="modal" style="max-width: 360px;">
+        <div class="modal-header">
+          <div class="modal-title">Share Note</div>
+          <button class="modal-close" id="share-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="confirm-text" id="share-status">Choose visibility for your shared note:</div>
+          <div class="confirm-actions" id="share-options">
+            <button class="btn" id="share-secret-btn">Secret</button>
+            <button class="btn btn-primary" id="share-public-btn">Public</button>
+          </div>
+          <div class="hidden" id="share-result">
+            <input type="text" class="save-input" id="share-url" readonly style="margin-bottom: 8px;" />
+            <div class="confirm-actions">
+              <button class="btn btn-primary" id="copy-url-btn">Copy URL</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Confirm Modal -->
     <div class="modal-overlay" id="confirm-modal">
       <div class="modal" style="max-width: 340px;">
@@ -892,6 +916,7 @@ Type markdown here, preview on the right updates as you type."
       referrerpolicy="no-referrer"
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>
 
     <script>
       // Check if running in Electron
@@ -946,6 +971,7 @@ Type markdown here, preview on the right updates as you type."
       const saveModal = document.getElementById("save-modal");
       const helpModal = document.getElementById("help-modal");
       const confirmModal = document.getElementById("confirm-modal");
+      const shareModal = document.getElementById("share-modal");
       const notesSearch = document.getElementById("notes-search");
       const notesList = document.getElementById("notes-list");
       const saveNameInput = document.getElementById("save-name-input");
@@ -953,6 +979,7 @@ Type markdown here, preview on the right updates as you type."
       const openBtn = document.getElementById("open-btn");
       const newBtn = document.getElementById("new-btn");
       const downloadBtn = document.getElementById("download-btn");
+      const shareBtn = document.getElementById("share-btn");
       const confirmText = document.getElementById("confirm-text");
       const confirmTitle = document.getElementById("confirm-title");
 
@@ -1133,6 +1160,7 @@ Type markdown here, preview on the right updates as you type."
         closeModal(saveModal);
         closeModal(helpModal);
         closeModal(confirmModal);
+        closeModal(shareModal);
         confirmCallback = null;
       }
 
@@ -1274,11 +1302,6 @@ Type markdown here, preview on the right updates as you type."
 
       // New note
       async function createNewNote() {
-        if (rich.innerHTML.trim() || mdInput.value.trim()) {
-          const confirmed = await showConfirm("Create new note? Unsaved changes will be lost.", "New Note");
-          if (!confirmed) return;
-        }
-
         rich.innerHTML = "";
         rich.dataset.hasContent = "false";
         mdInput.value = "";
@@ -1380,6 +1403,81 @@ Type markdown here, preview on the right updates as you type."
       }
 
       downloadBtn.addEventListener("click", downloadNote);
+
+      // Share functionality
+      const turndownService = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced'
+      });
+
+      function getShareContent() {
+        let content = mdInput.value;
+        if (!content.trim() && rich.innerHTML.trim()) {
+          // Convert HTML to Markdown using Turndown
+          content = turndownService.turndown(rich.innerHTML);
+        }
+        return content;
+      }
+
+      function resetShareModal() {
+        document.getElementById("share-status").textContent = "Choose visibility for your shared note:";
+        document.getElementById("share-options").classList.remove("hidden");
+        document.getElementById("share-result").classList.add("hidden");
+        document.getElementById("share-url").value = "";
+      }
+
+      async function shareNote(isPublic) {
+        const content = getShareContent();
+        if (!content.trim()) {
+          await showConfirm("Nothing to share. The note is empty.", "Share");
+          return;
+        }
+
+        const filename = currentNoteName
+          ? currentNoteName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md'
+          : 'note.md';
+
+        document.getElementById("share-status").textContent = "Creating gist...";
+        document.getElementById("share-options").classList.add("hidden");
+
+        const result = await window.electronAPI.shareGist(content, filename, isPublic);
+
+        if (result.success) {
+          document.getElementById("share-status").textContent = isPublic ? "Public gist created!" : "Secret gist created!";
+          document.getElementById("share-url").value = result.url;
+          document.getElementById("share-result").classList.remove("hidden");
+        } else {
+          document.getElementById("share-status").textContent = "Error: " + result.error;
+          document.getElementById("share-options").classList.remove("hidden");
+        }
+      }
+
+      shareBtn.addEventListener("click", () => {
+        if (!isElectron) {
+          showConfirm("Share is only available in the desktop app.", "Share");
+          return;
+        }
+        const content = getShareContent();
+        if (!content.trim()) {
+          showConfirm("Nothing to share. The note is empty.", "Share");
+          return;
+        }
+        resetShareModal();
+        openModal(shareModal);
+      });
+
+      document.getElementById("share-modal-close").addEventListener("click", () => closeModal(shareModal));
+      document.getElementById("share-secret-btn").addEventListener("click", () => shareNote(false));
+      document.getElementById("share-public-btn").addEventListener("click", () => shareNote(true));
+      document.getElementById("copy-url-btn").addEventListener("click", () => {
+        const urlInput = document.getElementById("share-url");
+        urlInput.select();
+        document.execCommand("copy");
+        document.getElementById("copy-url-btn").textContent = "Copied!";
+        setTimeout(() => {
+          document.getElementById("copy-url-btn").textContent = "Copy URL";
+        }, 1500);
+      });
 
       // Confirm modal handlers
       document.getElementById("confirm-modal-close").addEventListener("click", () => {

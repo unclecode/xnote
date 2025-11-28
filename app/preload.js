@@ -13,5 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   quitApp: () => ipcRenderer.send('app-quit'),
 
   // Download/export
-  downloadMarkdown: (content, suggestedName) => ipcRenderer.invoke('download-markdown', content, suggestedName)
+  downloadMarkdown: (content, suggestedName) => ipcRenderer.invoke('download-markdown', content, suggestedName),
+
+  // Share via Gist
+  shareGist: (content, filename, isPublic) => ipcRenderer.invoke('share-gist', content, filename, isPublic)
 });
