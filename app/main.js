@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage, systemPreferences } = require('electron');
+const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage, systemPreferences, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -201,6 +201,33 @@ ipcMain.on('window-close', () => {
 ipcMain.on('app-quit', () => {
   isQuitting = true;
   app.quit();
+});
+
+// Download/export note as markdown
+ipcMain.handle('download-markdown', async (event, content, suggestedName) => {
+  const downloadsPath = app.getPath('downloads');
+  const defaultFilename = suggestedName || 'note.md';
+
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: 'Save Note as Markdown',
+    defaultPath: path.join(downloadsPath, defaultFilename),
+    filters: [
+      { name: 'Markdown', extensions: ['md'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  });
+
+  if (result.canceled || !result.filePath) {
+    return { success: false, canceled: true };
+  }
+
+  try {
+    fs.writeFileSync(result.filePath, content, 'utf8');
+    return { success: true, filePath: result.filePath };
+  } catch (err) {
+    console.error('Error saving file:', err);
+    return { success: false, error: err.message };
+  }
 });
 
 // App lifecycle

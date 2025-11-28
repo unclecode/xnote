@@ -725,6 +725,7 @@
         <div class="right-group">
           <button class="toolbar-btn" id="new-btn">New</button>
           <button class="toolbar-btn" id="open-btn">Open</button>
+          <button class="toolbar-btn" id="download-btn">Download</button>
           <div class="toggle-group" id="mode-toggle">
             <button type="button" data-mode="rich">Rich</button>
             <button type="button" data-mode="md">Markdown</button>
@@ -835,8 +836,16 @@ Type markdown here, preview on the right updates as you type."
               <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>O</kbd></div>
             </li>
             <li>
-              <span class="shortcut-label">Save Note</span>
+              <span class="shortcut-label">Quick Save</span>
               <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>S</kbd></div>
+            </li>
+            <li>
+              <span class="shortcut-label">Save As</span>
+              <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>Shift</kbd><kbd>S</kbd></div>
+            </li>
+            <li>
+              <span class="shortcut-label">Download Note</span>
+              <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>D</kbd></div>
             </li>
             <li>
               <span class="shortcut-label">Rich Mode</span>
@@ -943,6 +952,7 @@ Type markdown here, preview on the right updates as you type."
       const helpBtn = document.getElementById("help-btn");
       const openBtn = document.getElementById("open-btn");
       const newBtn = document.getElementById("new-btn");
+      const downloadBtn = document.getElementById("download-btn");
       const confirmText = document.getElementById("confirm-text");
       const confirmTitle = document.getElementById("confirm-title");
 
@@ -1225,6 +1235,12 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
+        await saveNoteWithName(name);
+        closeModal(saveModal);
+      }
+
+      // Save note with a specific name (used by both quick save and save modal)
+      async function saveNoteWithName(name) {
         const notes = await getNotes();
         const existing = notes.findIndex((n) => n.name === name);
 
@@ -1244,9 +1260,16 @@ Type markdown here, preview on the right updates as you type."
         await saveNotes(notes);
         currentNoteName = name;
         await storage.set(KEY_CURRENT, name);
-
-        closeModal(saveModal);
         setStatusSaved();
+      }
+
+      // Quick save - saves directly if note has a name, otherwise opens modal
+      async function quickSave() {
+        if (currentNoteName) {
+          await saveNoteWithName(currentNoteName);
+        } else {
+          openSaveModal();
+        }
       }
 
       // New note
@@ -1308,6 +1331,55 @@ Type markdown here, preview on the right updates as you type."
       helpBtn.addEventListener("click", () => openModal(helpModal));
       openBtn.addEventListener("click", openNotesModal);
       newBtn.addEventListener("click", createNewNote);
+
+      // Download note as markdown
+      async function downloadNote() {
+        // Get the markdown content - prefer md mode content, or convert rich content
+        let content = mdInput.value;
+
+        // If in rich mode and no markdown content, use the rich content (as plain text)
+        if (!content.trim() && rich.innerHTML.trim()) {
+          // Convert HTML to basic markdown-ish text
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = rich.innerHTML;
+          content = tempDiv.innerText || tempDiv.textContent || '';
+        }
+
+        if (!content.trim()) {
+          await showConfirm("Nothing to download. The note is empty.", "Download");
+          return;
+        }
+
+        // Generate suggested filename
+        const suggestedName = currentNoteName
+          ? currentNoteName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md'
+          : 'note.md';
+
+        if (isElectron) {
+          const result = await window.electronAPI.downloadMarkdown(content, suggestedName);
+          if (result.success) {
+            // Optionally show success feedback
+            statusLabel.textContent = "Downloaded";
+            statusTime.textContent = " at " + nowClock();
+            setTimeout(() => setStatusSaved(), 2000);
+          } else if (result.error) {
+            await showConfirm("Failed to save: " + result.error, "Error");
+          }
+        } else {
+          // Browser fallback: use download link
+          const blob = new Blob([content], { type: 'text/markdown' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = suggestedName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      }
+
+      downloadBtn.addEventListener("click", downloadNote);
 
       // Confirm modal handlers
       document.getElementById("confirm-modal-close").addEventListener("click", () => {
@@ -1375,9 +1447,16 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
-        // Cmd+S for save
-        if (key === "s") {
+        // Cmd+Shift+S for Save As (always show modal)
+        if (key === "s" && event.shiftKey) {
           openSaveModal();
+          event.preventDefault();
+          return;
+        }
+
+        // Cmd+S for quick save
+        if (key === "s") {
+          quickSave();
           event.preventDefault();
           return;
         }
@@ -1385,6 +1464,13 @@ Type markdown here, preview on the right updates as you type."
         // Cmd+N for new
         if (key === "n") {
           createNewNote();
+          event.preventDefault();
+          return;
+        }
+
+        // Cmd+D for download
+        if (key === "d") {
+          downloadNote();
           event.preventDefault();
           return;
         }
