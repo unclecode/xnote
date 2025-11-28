@@ -24,5 +24,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUIState: () => ipcRenderer.invoke('get-ui-state'),
 
   // Download/export
-  downloadMarkdown: (content, suggestedName) => ipcRenderer.invoke('download-markdown', content, suggestedName)
+  downloadMarkdown: (content, suggestedName) => ipcRenderer.invoke('download-markdown', content, suggestedName),
+
+  // Share via Gist
+  shareGist: (content, filename, isPublic) => ipcRenderer.invoke('share-gist', content, filename, isPublic)
 });
