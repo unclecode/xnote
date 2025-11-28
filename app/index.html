@@ -236,6 +236,7 @@
         overflow: auto;
       }
 
+
       #rich-editor[contenteditable="true"]::before {
         content: attr(data-placeholder);
         position: absolute;
@@ -711,104 +712,1063 @@
         margin-top: 4px;
       }
 
-      /* Tab bar styles */
-      .tab-bar {
+      /* Icon button (for settings gear) */
+      .icon-btn {
+        padding: 6px 8px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.15s ease;
         display: flex;
         align-items: center;
-        padding: 4px 8px;
-        background: rgba(4, 6, 18, 0.92);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        gap: 4px;
-        -webkit-app-region: no-drag;
+        justify-content: center;
       }
 
-      :root[data-theme="light"] .tab-bar {
-        background: rgba(240, 235, 225, 0.95);
-        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      .icon-btn:hover {
+        background: var(--accent-soft);
+        color: var(--accent);
       }
 
-      .tabs-container {
+      /* AI Settings Modal specific styles */
+      .setting-group {
+        margin-bottom: 16px;
+      }
+
+      .setting-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-main);
+        margin-bottom: 6px;
+      }
+
+      .setting-input,
+      .setting-select,
+      .setting-textarea {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-main);
+        font-size: 13px;
+        font-family: inherit;
+        transition: border-color 0.15s ease;
+      }
+
+      .setting-input:focus,
+      .setting-select:focus,
+      .setting-textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .setting-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .checkbox-label {
         display: flex;
-        gap: 2px;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+
+      .checkbox-label input[type="checkbox"] {
+        cursor: pointer;
+      }
+
+      .help-text {
+        display: block;
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      .help-text a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+
+      .help-text a:hover {
+        text-decoration: underline;
+      }
+
+      /* AI Floating Input */
+      .ai-floating-input {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-elevated);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        box-shadow: var(--shadow-soft);
+        width: 480px;
+        max-width: 90vw;
+        z-index: 9999;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+      }
+
+      .ai-floating-input.visible {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .ai-input-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-subtle);
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: opacity 0.2s ease, max-height 0.2s ease;
+      }
+
+      .ai-floating-input.visible .ai-input-header,
+      .ai-floating-input:hover .ai-input-header,
+      .ai-floating-input:focus-within .ai-input-header {
+        opacity: 1;
+        max-height: 50px;
+      }
+
+      .ai-model-selector {
         flex: 1;
+        padding: 4px 8px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-main);
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .ai-model-selector:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .ai-close-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 0 4px;
+        margin-left: 8px;
+        line-height: 1;
+      }
+
+      .ai-close-btn:hover {
+        color: var(--accent);
+      }
+
+      /* AI Selection Context Card */
+      .ai-selection-context {
+        display: none;
+        margin: 8px 12px;
+        padding: 8px 10px;
+        background: var(--bg-elevated-soft);
+        border-left: 3px solid var(--accent);
+        border-radius: 6px;
+        max-height: 150px;
+        overflow-y: auto;
+      }
+
+      .ai-selection-context.has-selection {
+        display: block;
+      }
+
+      .ai-context-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .ai-context-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .ai-context-remove {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0 2px;
+        line-height: 1;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+      }
+
+      .ai-context-remove:hover {
+        opacity: 1;
+        color: var(--accent);
+      }
+
+      .ai-context-content {
+        font-size: 12px;
+        color: var(--text-main);
+        line-height: 1.5;
+        max-height: 80px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      .ai-context-content::-webkit-scrollbar {
+        width: 4px;
+      }
+
+      .ai-context-content::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .ai-context-content::-webkit-scrollbar-thumb {
+        background: var(--border-subtle);
+        border-radius: 2px;
+      }
+
+      .ai-image-thumbnails {
+        display: flex;
+        gap: 8px;
+        padding: 8px 12px 0 12px;
+        flex-wrap: wrap;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.2s ease;
+      }
+
+      .ai-image-thumbnails.has-images {
+        max-height: 120px;
+        padding-bottom: 8px;
+      }
+
+      .ai-image-thumb {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+      }
+
+      .ai-image-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .ai-image-remove {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .ai-image-remove:hover {
+        background: rgba(255, 0, 0, 0.8);
+      }
+
+      /* Selection Start Chat Button */
+      .selection-start-chat-btn {
+        position: absolute;
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        z-index: 1000;
+        transition: all 0.2s ease;
+      }
+
+      .selection-start-chat-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .selection-start-chat-btn.visible {
+        display: flex;
+      }
+
+      .ai-mode-toggle-wrapper {
+        display: flex;
+        gap: 0;
+        background: var(--bg-secondary);
+        border-radius: 6px;
+        padding: 2px;
+        margin: 0 8px;
+      }
+
+      .ai-mode-btn {
+        padding: 4px 12px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .ai-mode-btn:hover {
+        color: var(--text-main);
+      }
+
+      .ai-mode-btn.is-active {
+        background: var(--bg-main);
+        color: var(--text-main);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .ai-prompt-input {
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        border: none;
+        color: var(--text-main);
+        font-size: 13px;
+        font-family: inherit;
+        resize: none;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .ai-prompt-input:focus {
+        outline: none;
+      }
+
+      .ai-prompt-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .ai-send-btn {
+        margin: 0 12px 12px 12px;
+        padding: 8px 16px;
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        position: relative;
+      }
+
+      .ai-send-btn.visible {
+        opacity: 1;
+        max-height: 50px;
+      }
+
+      .ai-send-btn:hover:not(:disabled):not(.generating) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
+      }
+
+      .ai-send-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+
+      /* Generating state */
+      .ai-send-btn.generating {
+        background: #e74c3c;
+        cursor: pointer;
+      }
+
+      .ai-send-btn.generating:hover {
+        background: #c0392b;
+      }
+
+      /* Loading spinner */
+      .ai-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: none;
+      }
+
+      .ai-send-btn.generating .ai-spinner {
+        display: block;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .ai-btn-text {
+        transition: opacity 0.2s ease;
+      }
+
+      /* Header glow animation for AI processing */
+      @keyframes header-glow {
+        0%, 100% {
+          background: rgba(4, 6, 18, 0.96);
+          border-bottom-color: rgba(255, 255, 255, 0.06);
+        }
+        50% {
+          background: rgba(79, 140, 255, 0.4);
+          border-bottom-color: rgba(79, 140, 255, 0.6);
+        }
+      }
+
+      .toolbar.ai-generating {
+        animation: header-glow 1.5s ease-in-out infinite !important;
+      }
+
+      :root[data-theme="light"] .toolbar.ai-generating {
+        animation: header-glow-light 1.5s ease-in-out infinite !important;
+      }
+
+      @keyframes header-glow-light {
+        0%, 100% {
+          background: rgba(245, 240, 230, 0.98);
+          border-bottom-color: rgba(0, 0, 0, 0.08);
+        }
+        50% {
+          background: rgba(139, 105, 20, 0.35);
+          border-bottom-color: rgba(139, 105, 20, 0.5);
+        }
+      }
+
+      /* ========== CHAT SIDEBAR (Phase 3) ========== */
+
+      /* Main content wrapper (body + chat sidebar) */
+      .main-content {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      .chat-sidebar {
+        display: none;
+        width: 400px;
+        background: var(--bg-elevated);
+        border-left: 1px solid var(--border-subtle);
+        flex-direction: column;
+        flex-shrink: 0;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+
+      .chat-sidebar.visible {
+        display: flex;
+      }
+
+      .chat-resize-handle {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        cursor: ew-resize;
+        background: transparent;
+        transition: background 0.2s ease;
+      }
+
+      .chat-resize-handle:hover {
+        background: var(--accent);
+      }
+
+      /* Chat Header */
+      .chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: var(--bg-elevated);
+        flex-shrink: 0;
+      }
+
+      .chat-header-left,
+      .chat-header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .chat-icon-btn {
+        background: none;
+        border: none;
+        color: var(--text-main);
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+      }
+
+      .chat-icon-btn:hover {
+        background: var(--bg-elevated-soft);
+        color: var(--accent);
+      }
+
+      .chat-model-select {
+        padding: 4px 8px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: 6px;
+        color: var(--text-main);
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .chat-model-select:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      /* Chat Messages Area */
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .chat-messages::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .chat-messages::-webkit-scrollbar-thumb {
+        background: var(--border-subtle);
+        border-radius: 4px;
+      }
+
+      /* Message Bubble */
+      .chat-message {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .chat-message-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 11px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .chat-message-content {
+        padding: 12px 14px;
+        border-radius: 12px;
+        line-height: 1.6;
+        font-size: 13px;
+        word-wrap: break-word;
+      }
+
+      .chat-message.user .chat-message-content {
+        background: var(--accent);
+        color: white;
+        align-self: flex-end;
+        max-width: 85%;
+      }
+
+      .chat-message.ai .chat-message-content {
+        background: var(--bg-elevated-soft);
+        color: var(--text-main);
+        align-self: flex-start;
+        max-width: 100%;
+      }
+
+      .chat-message-actions {
+        display: flex;
+        gap: 4px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .chat-message:hover .chat-message-actions {
+        opacity: 1;
+      }
+
+      .chat-message-action-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 4px;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.2s ease;
+      }
+
+      .chat-message-action-btn:hover {
+        background: var(--bg-elevated-soft);
+        color: var(--accent);
+      }
+
+      /* Markdown in messages */
+      .chat-message-content pre {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 12px;
+        border-radius: 6px;
         overflow-x: auto;
+        margin: 8px 0;
       }
 
-      .tabs-container::-webkit-scrollbar {
-        height: 3px;
+      .chat-message-content code {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: "JetBrains Mono", monospace;
       }
 
-      .tab {
+      .chat-message-content pre code {
+        background: none;
+        padding: 0;
+      }
+
+      /* Thinking indicator */
+      .thinking-indicator {
+        font-size: 13px;
+        color: var(--text-muted);
+        padding: 8px 12px;
+      }
+
+      .thinking-dots::after {
+        content: '.';
+        animation: dots 1.5s steps(3, end) infinite;
+      }
+
+      @keyframes dots {
+        0%, 20% { content: '.'; }
+        40% { content: '..'; }
+        60%, 100% { content: '...'; }
+      }
+
+      /* Generated image */
+      .generated-image {
+        margin: 8px 0;
+        border-radius: 8px;
+        overflow: hidden;
+        max-width: 100%;
+      }
+
+      .image-container {
+        position: relative;
+        display: inline-block;
+        max-width: 100%;
+      }
+
+      .image-container img {
+        max-width: 100%;
+        display: block;
+        border-radius: 8px;
+      }
+
+      .image-overlay-actions {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        display: flex;
+        gap: 6px;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+      }
+
+      .image-container:hover .image-overlay-actions {
+        opacity: 1;
+      }
+
+      .image-icon-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        border: none;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .image-icon-btn:hover {
+        background: var(--accent);
+        transform: scale(1.1);
+      }
+
+      .image-icon-btn svg {
+        stroke: currentColor;
+      }
+
+      /* Chat Selection Context */
+      .chat-selection-context {
+        display: none;
+        margin: 12px;
+        padding: 8px 10px;
+        background: var(--bg-elevated-soft);
+        border-left: 3px solid var(--accent);
+        border-radius: 6px;
+        max-height: 120px;
+      }
+
+      .chat-selection-context.has-selection {
+        display: block;
+      }
+
+      .chat-context-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+
+      .chat-context-label {
+        font-size: 10px;
+        color: var(--text-muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .chat-context-remove {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+      }
+
+      .chat-context-remove:hover {
+        opacity: 1;
+        color: var(--accent);
+      }
+
+      .chat-context-content {
+        font-size: 11px;
+        color: var(--text-main);
+        line-height: 1.5;
+        max-height: 60px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      /* Chat Input Area */
+      .chat-input-area {
+        flex-shrink: 0;
+        border-top: 1px solid var(--border-subtle);
+        background: var(--bg-elevated);
+      }
+
+      .chat-input-controls {
+        padding: 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .chat-checkbox-label {
         display: flex;
         align-items: center;
         gap: 6px;
-        padding: 5px 10px;
-        border-radius: 6px;
-        background: transparent;
+        font-size: 12px;
+        color: var(--text-main);
         cursor: pointer;
-        font-size: 11px;
+      }
+
+      .chat-checkbox-label input[type="checkbox"] {
+        cursor: pointer;
+      }
+
+      /* Chat Image Thumbnails */
+      .chat-image-thumbnails {
+        display: none;
+        gap: 8px;
+        padding: 8px 12px 0 12px;
+        flex-wrap: wrap;
+      }
+
+      .chat-image-thumbnails.has-images {
+        display: flex;
+        padding-bottom: 8px;
+      }
+
+      .chat-image-thumb {
+        position: relative;
+        width: 60px;
+        height: 60px;
+        border-radius: 6px;
+        overflow: hidden;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+      }
+
+      .chat-image-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .chat-image-remove {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .chat-image-remove:hover {
+        background: rgba(255, 0, 0, 0.8);
+      }
+
+      .chat-input-wrapper {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        padding: 0 12px 12px 12px;
+      }
+
+      .chat-input {
+        flex: 1;
+        padding: 10px 12px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        color: var(--text-main);
+        font-size: 13px;
+        font-family: inherit;
+        resize: none;
+        max-height: 150px;
+        overflow-y: auto;
+        transition: border-color 0.2s ease;
+      }
+
+      .chat-input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .chat-input::placeholder {
         color: var(--text-muted);
-        max-width: 150px;
-        transition: background 100ms ease;
       }
 
-      .tab:hover {
-        background: rgba(255, 255, 255, 0.06);
+      .chat-send-btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
       }
 
-      :root[data-theme="light"] .tab:hover {
-        background: rgba(0, 0, 0, 0.04);
+      .chat-send-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 140, 255, 0.3);
       }
 
-      .tab.is-active {
-        background: var(--accent-soft);
-        color: var(--accent-strong);
+      .chat-send-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
       }
 
-      .tab-name {
+      /* Chat History Panel */
+      .chat-history-panel {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-elevated);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+      }
+
+      .chat-history-panel.visible {
+        transform: translateX(0);
+      }
+
+      .chat-history-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .chat-history-header h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-main);
+        margin: 0;
+      }
+
+      .chat-history-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+      }
+
+      .chat-history-item {
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        background: var(--bg-elevated-soft);
+        border: 1px solid var(--border-subtle);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .chat-history-item:hover {
+        background: var(--bg-base);
+        border-color: var(--accent);
+      }
+
+      .chat-history-item-title {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text-main);
+        margin-bottom: 4px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
-      .tab-close {
-        background: none;
-        border: none;
+      .chat-history-item-date {
+        font-size: 10px;
         color: var(--text-muted);
-        cursor: pointer;
-        font-size: 13px;
-        line-height: 1;
-        padding: 0;
-        opacity: 0.5;
       }
 
-      .tab-close:hover {
-        opacity: 1;
-        color: #ff6b6b;
+      .chat-history-item-preview {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .tab-new-btn {
-        background: none;
+      /* Toast notifications */
+      .toast {
+        position: fixed;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--bg-elevated);
+        color: var(--text-main);
+        padding: 10px 20px;
+        border-radius: 8px;
+        box-shadow: var(--shadow-soft);
         border: 1px solid var(--border-subtle);
-        border-radius: 4px;
-        color: var(--text-muted);
-        cursor: pointer;
-        padding: 3px 8px;
-        font-size: 14px;
+        font-size: 13px;
+        z-index: 10000;
+        animation: slideDown 0.3s ease;
       }
 
-      .tab-new-btn:hover {
-        background: var(--accent-soft);
-        color: var(--accent-strong);
-      }
-
-      .tab-unsaved::before {
-        content: "";
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--accent);
-        flex-shrink: 0;
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
       }
 </style>
   </head>
@@ -825,8 +1785,6 @@
         <div class="right-group">
           <button class="toolbar-btn" id="new-btn">New</button>
           <button class="toolbar-btn" id="open-btn">Open</button>
-          <button class="toolbar-btn" id="download-btn">Download</button>
-          <button class="toolbar-btn" id="share-btn">Share</button>
           <div class="toggle-group" id="mode-toggle">
             <button type="button" data-mode="rich">Rich</button>
             <button type="button" data-mode="md">Markdown</button>
@@ -835,14 +1793,13 @@
             <button type="button" data-theme="dark">Dark</button>
             <button type="button" data-theme="light">Light</button>
           </div>
+          <button class="icon-btn" id="ai-settings-btn" title="AI Settings">
+            <i data-lucide="settings" width="16" height="16"></i>
+          </button>
         </div>
       </header>
 
-      <div class="tab-bar" id="tab-bar">
-        <div class="tabs-container" id="tabs-container"></div>
-        <button class="tab-new-btn" id="tab-new-btn" title="New Tab">+</button>
-      </div>
-
+      <div class="main-content">
       <div class="body">
         <section class="pane">
           <div class="pane-header">
@@ -875,6 +1832,88 @@ Type markdown here, preview on the right updates as you type."
             <div id="md-preview"></div>
           </div>
         </section>
+      </div>
+
+      <!-- AI Chat Sidebar -->
+      <aside id="chat-sidebar" class="chat-sidebar">
+        <div class="chat-resize-handle"></div>
+
+        <div class="chat-header">
+          <div class="chat-header-left">
+            <button class="chat-icon-btn" id="chat-new-btn" title="New Chat">
+              <i data-lucide="plus" width="16" height="16"></i>
+            </button>
+            <button class="chat-icon-btn" id="chat-history-btn" title="History">
+              <i data-lucide="history" width="16" height="16"></i>
+            </button>
+          </div>
+          <div class="chat-header-right">
+            <select id="chat-model-selector" class="chat-model-select">
+              <option value="models/gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
+              <option value="models/gemini-exp-1206">gemini-exp-1206</option>
+              <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
+              <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+              <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+            </select>
+            <button class="chat-icon-btn" id="chat-close-btn" title="Close Chat">
+              <i data-lucide="x" width="16" height="16"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+          <!-- Messages will be inserted here -->
+        </div>
+
+        <div class="chat-input-area">
+          <div id="chat-selection-context" class="chat-selection-context">
+            <div class="chat-context-header">
+              <span class="chat-context-label">
+                <i data-lucide="quote" width="12" height="12"></i>
+                Selected text
+              </span>
+              <button class="chat-context-remove" id="chat-context-remove-btn">
+                <i data-lucide="x" width="14" height="14"></i>
+              </button>
+            </div>
+            <div class="chat-context-content" id="chat-context-content"></div>
+          </div>
+
+          <div class="chat-input-controls">
+            <label class="chat-checkbox-label">
+              <input type="checkbox" id="chat-include-note" />
+              <span>Include note</span>
+            </label>
+          </div>
+
+          <div id="chat-image-thumbnails" class="chat-image-thumbnails"></div>
+
+          <div class="chat-input-wrapper">
+            <textarea
+              id="chat-input"
+              class="chat-input"
+              placeholder="Ask AI anything..."
+              rows="1"
+            ></textarea>
+            <button id="chat-send-btn" class="chat-send-btn" title="Send">
+              <i data-lucide="send" width="16" height="16"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- History Panel (hidden by default) -->
+        <div id="chat-history-panel" class="chat-history-panel">
+          <div class="chat-history-header">
+            <h3>Chat History</h3>
+            <button class="chat-icon-btn" id="chat-history-close-btn">
+              <i data-lucide="x" width="16" height="16"></i>
+            </button>
+          </div>
+          <div class="chat-history-list" id="chat-history-list">
+            <!-- History items will be inserted here -->
+          </div>
+        </div>
+      </aside>
       </div>
 
       <footer class="status-bar">
@@ -942,16 +1981,8 @@ Type markdown here, preview on the right updates as you type."
               <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>O</kbd></div>
             </li>
             <li>
-              <span class="shortcut-label">Quick Save</span>
+              <span class="shortcut-label">Save Note</span>
               <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>S</kbd></div>
-            </li>
-            <li>
-              <span class="shortcut-label">Save As</span>
-              <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>Shift</kbd><kbd>S</kbd></div>
-            </li>
-            <li>
-              <span class="shortcut-label">Download Note</span>
-              <div class="shortcut-keys"><kbd>Cmd</kbd><kbd>D</kbd></div>
             </li>
             <li>
               <span class="shortcut-label">Rich Mode</span>
@@ -974,29 +2005,6 @@ Type markdown here, preview on the right updates as you type."
       </div>
     </div>
 
-    <!-- Share Modal -->
-    <div class="modal-overlay" id="share-modal">
-      <div class="modal" style="max-width: 360px;">
-        <div class="modal-header">
-          <div class="modal-title">Share Note</div>
-          <button class="modal-close" id="share-modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="confirm-text" id="share-status">Choose visibility for your shared note:</div>
-          <div class="confirm-actions" id="share-options">
-            <button class="btn" id="share-secret-btn">Secret</button>
-            <button class="btn btn-primary" id="share-public-btn">Public</button>
-          </div>
-          <div class="hidden" id="share-result">
-            <input type="text" class="save-input" id="share-url" readonly style="margin-bottom: 8px;" />
-            <div class="confirm-actions">
-              <button class="btn btn-primary" id="copy-url-btn">Copy URL</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Confirm Modal -->
     <div class="modal-overlay" id="confirm-modal">
       <div class="modal" style="max-width: 340px;">
@@ -1014,6 +2022,84 @@ Type markdown here, preview on the right updates as you type."
       </div>
     </div>
 
+    <!-- AI Settings Modal -->
+    <div class="modal-overlay" id="ai-settings-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">AI Settings</div>
+          <button class="modal-close" id="ai-settings-modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-group">
+            <label for="ai-api-key">Gemini API Key</label>
+            <input type="password" id="ai-api-key" placeholder="Enter your API key" class="setting-input" />
+            <small class="help-text">Get your key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a></small>
+          </div>
+          <div class="setting-group">
+            <label for="ai-model-select">Default Model</label>
+            <select id="ai-model-select" class="setting-select">
+              <option value="models/gemini-2.0-flash-exp">gemini-2.0-flash-exp (Default)</option>
+              <option value="models/gemini-exp-1206">gemini-exp-1206</option>
+              <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
+              <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+              <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+            </select>
+          </div>
+          <div class="setting-group">
+            <label class="checkbox-label">
+              <input type="checkbox" id="ai-enable-search" checked />
+              <span>Enable Google Search</span>
+            </label>
+          </div>
+          <div class="setting-group">
+            <label for="ai-system-prompt">System Prompt (Note Drafting)</label>
+            <textarea id="ai-system-prompt" rows="4" placeholder="Customize how AI assists with note drafting..." class="setting-textarea"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn" id="ai-settings-cancel-btn">Cancel</button>
+          <button class="btn btn-primary" id="ai-settings-save-btn">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selection Start Chat Button -->
+    <button id="selection-start-chat-btn" class="selection-start-chat-btn">
+      <i data-lucide="message-circle" width="16" height="16"></i>
+      <span>Start Chat</span>
+    </button>
+
+    <!-- AI Floating Input -->
+    <div id="ai-floating-input" class="ai-floating-input">
+      <div class="ai-input-header">
+        <select id="ai-model-selector" class="ai-model-selector">
+          <option value="models/gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
+          <option value="models/gemini-exp-1206">gemini-exp-1206</option>
+          <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
+          <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+          <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+        </select>
+        <div class="ai-mode-toggle-wrapper">
+          <button class="ai-mode-btn" data-mode="replace" id="ai-mode-replace">Replace</button>
+          <button class="ai-mode-btn is-active" data-mode="insert" id="ai-mode-insert">Insert</button>
+        </div>
+        <button class="ai-close-btn" id="ai-close-btn">&times;</button>
+      </div>
+      <div id="ai-selection-context" class="ai-selection-context">
+        <div class="ai-context-header">
+          <span class="ai-context-label">Selected text:</span>
+          <button class="ai-context-remove" id="ai-context-remove-btn">&times;</button>
+        </div>
+        <div class="ai-context-content" id="ai-context-content"></div>
+      </div>
+      <div id="ai-image-thumbnails" class="ai-image-thumbnails"></div>
+      <textarea id="ai-prompt-input" class="ai-prompt-input" placeholder="Ask AI to help with your note..." rows="1"></textarea>
+      <button id="ai-send-btn" class="ai-send-btn">
+        <div class="ai-spinner"></div>
+        <span class="ai-btn-text">Generate →</span>
+      </button>
+    </div>
+
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"
       integrity="sha512-8t02S+6B7qJk41bwkCmOMkmok+wxgHgMD+hE+zqkpQVwm+T1By+WGuqJC986KqthHz7jCB4djFZPccsE15ZkJg=="
@@ -1021,7 +2107,7 @@ Type markdown here, preview on the right updates as you type."
       referrerpolicy="no-referrer"
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/turndown/dist/turndown.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <script>
       // Check if running in Electron
@@ -1033,8 +2119,6 @@ Type markdown here, preview on the right updates as you type."
       const KEY_MODE = "mode";
       const KEY_NOTES = "notes";
       const KEY_CURRENT = "currentNote";
-      const KEY_OPEN_TABS = "openTabs";
-      const KEY_ACTIVE_TAB = "activeTab";
 
       // Storage abstraction for Electron/Browser compatibility
       const storage = {
@@ -1078,19 +2162,14 @@ Type markdown here, preview on the right updates as you type."
       const saveModal = document.getElementById("save-modal");
       const helpModal = document.getElementById("help-modal");
       const confirmModal = document.getElementById("confirm-modal");
-      const shareModal = document.getElementById("share-modal");
       const notesSearch = document.getElementById("notes-search");
       const notesList = document.getElementById("notes-list");
       const saveNameInput = document.getElementById("save-name-input");
       const helpBtn = document.getElementById("help-btn");
       const openBtn = document.getElementById("open-btn");
       const newBtn = document.getElementById("new-btn");
-      const downloadBtn = document.getElementById("download-btn");
-      const shareBtn = document.getElementById("share-btn");
       const confirmText = document.getElementById("confirm-text");
       const confirmTitle = document.getElementById("confirm-title");
-      const tabsContainer = document.getElementById("tabs-container");
-      const tabNewBtn = document.getElementById("tab-new-btn");
 
       let saveTimer = null;
       let currentNoteName = null;
@@ -1130,41 +2209,22 @@ Type markdown here, preview on the right updates as you type."
       }
 
       async function loadInitialState() {
-        // Initialize tabs
-        let tabs = await getOpenTabs();
-        if (tabs.length === 0) {
-          // Migrate from old system: create a tab for current note or a new temp tab
-          const currentNote = await storage.get(KEY_CURRENT);
-          const richContent = await storage.get(KEY_RICH) || "";
-          const mdContent = await storage.get(KEY_MD) || "";
+        const richContent = await storage.get(KEY_RICH) || "";
+        rich.innerHTML = richContent;
+        rich.dataset.hasContent = richContent.trim().length > 0;
 
-          if (currentNote) {
-            tabs = [{ noteName: currentNote }];
-          } else if (richContent.trim() || mdContent.trim()) {
-            // Has working content but no name - create temp tab with it
-            tabs = [{ tempId: `temp_${Date.now()}`, tempRich: richContent, tempMd: mdContent }];
-          } else {
-            tabs = [{ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "" }];
-          }
-          await setOpenTabs(tabs);
-          await setActiveTabIndex(0);
-        }
+        const mdContent = await storage.get(KEY_MD) || "";
+        mdInput.value = mdContent;
+        updateMarkdownPreview();
 
-        // Render tabs
-        await renderTabs();
-
-        // Load active tab content
-        const activeIndex = await getActiveTabIndex();
-        const activeTab = tabs[activeIndex];
-        await loadTabContent(activeTab);
-        currentNoteName = activeTab.noteName || null;
-
-        // Load theme and mode
         const savedTheme = await storage.get(KEY_THEME) || "dark";
         applyTheme(savedTheme, false);
 
         const savedMode = await storage.get(KEY_MODE) || "rich";
         applyMode(savedMode, false);
+
+        // Load current note name if any
+        currentNoteName = await storage.get(KEY_CURRENT) || null;
 
         setStatusSaved();
       }
@@ -1267,170 +2327,6 @@ Type markdown here, preview on the right updates as you type."
         await storage.set(KEY_NOTES, notes);
       }
 
-      // Tab management functions
-      async function getOpenTabs() {
-        return await storage.get(KEY_OPEN_TABS) || [];
-      }
-
-      async function setOpenTabs(tabs) {
-        await storage.set(KEY_OPEN_TABS, tabs);
-      }
-
-      async function getActiveTabIndex() {
-        return await storage.get(KEY_ACTIVE_TAB) || 0;
-      }
-
-      async function setActiveTabIndex(index) {
-        await storage.set(KEY_ACTIVE_TAB, index);
-      }
-
-      async function renderTabs() {
-        const tabs = await getOpenTabs();
-        const activeIndex = await getActiveTabIndex();
-
-        tabsContainer.innerHTML = tabs.map((tab, index) => {
-          const name = tab.noteName || "Untitled";
-          const isActive = index === activeIndex;
-          const isUnsaved = !tab.noteName;
-
-          return `
-            <div class="tab ${isActive ? 'is-active' : ''} ${isUnsaved ? 'tab-unsaved' : ''}" data-index="${index}">
-              <span class="tab-name">${name}</span>
-              <button class="tab-close" data-index="${index}">&times;</button>
-            </div>
-          `;
-        }).join("");
-      }
-
-      async function loadTabContent(tab) {
-        if (tab.noteName) {
-          const notes = await getNotes();
-          const note = notes.find(n => n.name === tab.noteName);
-          if (note) {
-            rich.innerHTML = note.richContent || "";
-            rich.dataset.hasContent = (note.richContent || "").trim().length > 0;
-            mdInput.value = note.mdContent || "";
-            updateMarkdownPreview();
-          }
-        } else {
-          rich.innerHTML = tab.tempRich || "";
-          rich.dataset.hasContent = (tab.tempRich || "").trim().length > 0;
-          mdInput.value = tab.tempMd || "";
-          updateMarkdownPreview();
-        }
-      }
-
-      async function saveCurrentTabContent() {
-        const tabs = await getOpenTabs();
-        const activeIndex = await getActiveTabIndex();
-        if (activeIndex < 0 || activeIndex >= tabs.length) return;
-
-        const tab = tabs[activeIndex];
-
-        if (tab.noteName) {
-          // Save to KEY_NOTES using existing function
-          await saveNoteWithName(tab.noteName);
-        } else {
-          // Save to tab's temp storage
-          tab.tempRich = rich.innerHTML;
-          tab.tempMd = mdInput.value;
-          await setOpenTabs(tabs);
-        }
-      }
-
-      async function switchToTab(newIndex) {
-        const tabs = await getOpenTabs();
-        const currentIndex = await getActiveTabIndex();
-
-        if (newIndex === currentIndex || newIndex < 0 || newIndex >= tabs.length) return;
-
-        // Auto-save current tab
-        await saveCurrentTabContent();
-
-        // Update active index
-        await setActiveTabIndex(newIndex);
-
-        // Load new tab content
-        const tab = tabs[newIndex];
-        await loadTabContent(tab);
-        currentNoteName = tab.noteName || null;
-
-        await renderTabs();
-      }
-
-      async function createNewTab() {
-        await saveCurrentTabContent();
-
-        const tabs = await getOpenTabs();
-        tabs.push({ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "" });
-        await setOpenTabs(tabs);
-
-        // Load the new tab
-        const newIndex = tabs.length - 1;
-        await setActiveTabIndex(newIndex);
-        await loadTabContent(tabs[newIndex]);
-        currentNoteName = null;
-
-        await renderTabs();
-      }
-
-      async function closeTab(index) {
-        const tabs = await getOpenTabs();
-        const tab = tabs[index];
-
-        // Warn if unsaved with content
-        if (!tab.noteName && (tab.tempRich?.trim() || tab.tempMd?.trim())) {
-          const confirmed = await showConfirm("Close unsaved note?", "Close Tab");
-          if (!confirmed) return;
-        }
-
-        tabs.splice(index, 1);
-
-        // Ensure at least one tab
-        if (tabs.length === 0) {
-          tabs.push({ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "" });
-        }
-
-        await setOpenTabs(tabs);
-
-        // Adjust active index
-        let activeIndex = await getActiveTabIndex();
-        if (index <= activeIndex) {
-          activeIndex = Math.max(0, activeIndex - 1);
-        }
-        activeIndex = Math.min(activeIndex, tabs.length - 1);
-        await setActiveTabIndex(activeIndex);
-
-        await loadTabContent(tabs[activeIndex]);
-        currentNoteName = tabs[activeIndex].noteName || null;
-        await renderTabs();
-      }
-
-      async function openNoteAsTab(noteName) {
-        await saveCurrentTabContent();
-
-        const tabs = await getOpenTabs();
-
-        // Check if already open - switch to it
-        const existingIndex = tabs.findIndex(t => t.noteName === noteName);
-        if (existingIndex >= 0) {
-          await switchToTab(existingIndex);
-          return;
-        }
-
-        // Add new tab
-        tabs.push({ noteName });
-        await setOpenTabs(tabs);
-
-        // Switch to it
-        const newIndex = tabs.length - 1;
-        await setActiveTabIndex(newIndex);
-        await loadTabContent(tabs[newIndex]);
-        currentNoteName = noteName;
-
-        await renderTabs();
-      }
-
       function formatDate(timestamp) {
         const d = new Date(timestamp);
         return d.toLocaleDateString() + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -1452,7 +2348,6 @@ Type markdown here, preview on the right updates as you type."
         closeModal(saveModal);
         closeModal(helpModal);
         closeModal(confirmModal);
-        closeModal(shareModal);
         confirmCallback = null;
       }
 
@@ -1504,8 +2399,24 @@ Type markdown here, preview on the right updates as you type."
       }
 
       async function loadNote(name) {
+        const notes = await getNotes();
+        const note = notes.find((n) => n.name === name);
+        if (!note) return;
+
+        // Load content
+        rich.innerHTML = note.richContent || "";
+        rich.dataset.hasContent = (note.richContent || "").trim().length > 0;
+        mdInput.value = note.mdContent || "";
+        updateMarkdownPreview();
+
+        // Save to working storage
+        await storage.set(KEY_RICH, note.richContent || "");
+        await storage.set(KEY_MD, note.mdContent || "");
+
+        currentNoteName = name;
+        await storage.set(KEY_CURRENT, name);
+
         closeModal(notesModal);
-        await openNoteAsTab(name);
         setStatusSaved();
       }
 
@@ -1539,12 +2450,6 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
-        await saveNoteWithName(name);
-        closeModal(saveModal);
-      }
-
-      // Save note with a specific name (used by both quick save and save modal)
-      async function saveNoteWithName(name) {
         const notes = await getNotes();
         const existing = notes.findIndex((n) => n.name === name);
 
@@ -1565,36 +2470,29 @@ Type markdown here, preview on the right updates as you type."
         currentNoteName = name;
         await storage.set(KEY_CURRENT, name);
 
-        // Update tab if it was unsaved (convert temp tab to named tab)
-        const tabs = await getOpenTabs();
-        const activeIndex = await getActiveTabIndex();
-        const activeTab = tabs[activeIndex];
-
-        if (activeTab && !activeTab.noteName) {
-          delete activeTab.tempId;
-          delete activeTab.tempRich;
-          delete activeTab.tempMd;
-          activeTab.noteName = name;
-          await setOpenTabs(tabs);
-          await renderTabs();
-        }
-
+        closeModal(saveModal);
         setStatusSaved();
       }
 
-      // Quick save - saves directly if note has a name, otherwise opens modal
-      async function quickSave() {
-        if (currentNoteName) {
-          await saveNoteWithName(currentNoteName);
-        } else {
-          openSaveModal();
-        }
-      }
-
-      // New note - now creates a new tab
+      // New note
       async function createNewNote() {
+        if (rich.innerHTML.trim() || mdInput.value.trim()) {
+          const confirmed = await showConfirm("Create new note? Unsaved changes will be lost.", "New Note");
+          if (!confirmed) return;
+        }
+
+        rich.innerHTML = "";
+        rich.dataset.hasContent = "false";
+        mdInput.value = "";
+        updateMarkdownPreview();
+
+        await storage.set(KEY_RICH, "");
+        await storage.set(KEY_MD, "");
+
+        currentNoteName = null;
+        await storage.set(KEY_CURRENT, null);
+
         closeAllModals();
-        await createNewTab();
         setStatusSaved();
 
         // Focus the appropriate editor
@@ -1635,147 +2533,6 @@ Type markdown here, preview on the right updates as you type."
       helpBtn.addEventListener("click", () => openModal(helpModal));
       openBtn.addEventListener("click", openNotesModal);
       newBtn.addEventListener("click", createNewNote);
-
-      // Tab event listeners
-      tabsContainer.addEventListener("click", async (e) => {
-        const closeBtn = e.target.closest(".tab-close");
-        if (closeBtn) {
-          e.stopPropagation();
-          await closeTab(parseInt(closeBtn.dataset.index));
-          return;
-        }
-
-        const tab = e.target.closest(".tab");
-        if (tab) {
-          await switchToTab(parseInt(tab.dataset.index));
-        }
-      });
-
-      tabNewBtn.addEventListener("click", createNewTab);
-
-      // Download note as markdown
-      async function downloadNote() {
-        // Get the markdown content - prefer md mode content, or convert rich content
-        let content = mdInput.value;
-
-        // If in rich mode and no markdown content, use the rich content (as plain text)
-        if (!content.trim() && rich.innerHTML.trim()) {
-          // Convert HTML to basic markdown-ish text
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = rich.innerHTML;
-          content = tempDiv.innerText || tempDiv.textContent || '';
-        }
-
-        if (!content.trim()) {
-          await showConfirm("Nothing to download. The note is empty.", "Download");
-          return;
-        }
-
-        // Generate suggested filename
-        const suggestedName = currentNoteName
-          ? currentNoteName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md'
-          : 'note.md';
-
-        if (isElectron) {
-          const result = await window.electronAPI.downloadMarkdown(content, suggestedName);
-          if (result.success) {
-            // Optionally show success feedback
-            statusLabel.textContent = "Downloaded";
-            statusTime.textContent = " at " + nowClock();
-            setTimeout(() => setStatusSaved(), 2000);
-          } else if (result.error) {
-            await showConfirm("Failed to save: " + result.error, "Error");
-          }
-        } else {
-          // Browser fallback: use download link
-          const blob = new Blob([content], { type: 'text/markdown' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = suggestedName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        }
-      }
-
-      downloadBtn.addEventListener("click", downloadNote);
-
-      // Share functionality
-      const turndownService = new TurndownService({
-        headingStyle: 'atx',
-        codeBlockStyle: 'fenced'
-      });
-
-      function getShareContent() {
-        let content = mdInput.value;
-        if (!content.trim() && rich.innerHTML.trim()) {
-          // Convert HTML to Markdown using Turndown
-          content = turndownService.turndown(rich.innerHTML);
-        }
-        return content;
-      }
-
-      function resetShareModal() {
-        document.getElementById("share-status").textContent = "Choose visibility for your shared note:";
-        document.getElementById("share-options").classList.remove("hidden");
-        document.getElementById("share-result").classList.add("hidden");
-        document.getElementById("share-url").value = "";
-      }
-
-      async function shareNote(isPublic) {
-        const content = getShareContent();
-        if (!content.trim()) {
-          await showConfirm("Nothing to share. The note is empty.", "Share");
-          return;
-        }
-
-        const filename = currentNoteName
-          ? currentNoteName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md'
-          : 'note.md';
-
-        document.getElementById("share-status").textContent = "Creating gist...";
-        document.getElementById("share-options").classList.add("hidden");
-
-        const result = await window.electronAPI.shareGist(content, filename, isPublic);
-
-        if (result.success) {
-          document.getElementById("share-status").textContent = isPublic ? "Public gist created!" : "Secret gist created!";
-          document.getElementById("share-url").value = result.url;
-          document.getElementById("share-result").classList.remove("hidden");
-        } else {
-          document.getElementById("share-status").textContent = "Error: " + result.error;
-          document.getElementById("share-options").classList.remove("hidden");
-        }
-      }
-
-      shareBtn.addEventListener("click", () => {
-        if (!isElectron) {
-          showConfirm("Share is only available in the desktop app.", "Share");
-          return;
-        }
-        const content = getShareContent();
-        if (!content.trim()) {
-          showConfirm("Nothing to share. The note is empty.", "Share");
-          return;
-        }
-        resetShareModal();
-        openModal(shareModal);
-      });
-
-      document.getElementById("share-modal-close").addEventListener("click", () => closeModal(shareModal));
-      document.getElementById("share-secret-btn").addEventListener("click", () => shareNote(false));
-      document.getElementById("share-public-btn").addEventListener("click", () => shareNote(true));
-      document.getElementById("copy-url-btn").addEventListener("click", () => {
-        const urlInput = document.getElementById("share-url");
-        urlInput.select();
-        document.execCommand("copy");
-        document.getElementById("copy-url-btn").textContent = "Copied!";
-        setTimeout(() => {
-          document.getElementById("copy-url-btn").textContent = "Copy URL";
-        }, 1500);
-      });
 
       // Confirm modal handlers
       document.getElementById("confirm-modal-close").addEventListener("click", () => {
@@ -1843,16 +2600,9 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
-        // Cmd+Shift+S for Save As (always show modal)
-        if (key === "s" && event.shiftKey) {
-          openSaveModal();
-          event.preventDefault();
-          return;
-        }
-
-        // Cmd+S for quick save
+        // Cmd+S for save
         if (key === "s") {
-          quickSave();
+          openSaveModal();
           event.preventDefault();
           return;
         }
@@ -1860,13 +2610,6 @@ Type markdown here, preview on the right updates as you type."
         // Cmd+N for new
         if (key === "n") {
           createNewNote();
-          event.preventDefault();
-          return;
-        }
-
-        // Cmd+D for download
-        if (key === "d") {
-          downloadNote();
           event.preventDefault();
           return;
         }
@@ -1915,6 +2658,1601 @@ Type markdown here, preview on the right updates as you type."
           }
         });
       }
+
+      // ========== AI FUNCTIONALITY ==========
+
+      // AI Constants
+      const DEFAULT_AI_SYSTEM_PROMPT = `You are an AI assistant helping to draft and refine notes. Return ONLY the requested content wrapped in <result></result> XML tags. No explanations, greetings, or commentary. Just the content.`;
+
+      const AI_MODELS = [
+        'models/gemini-2.0-flash-exp',
+        'models/gemini-exp-1206',
+        'models/gemini-2.0-flash-thinking-exp-1219',
+        'models/gemini-1.5-pro-latest',
+        'models/gemini-3-pro-image-preview'
+      ];
+
+      // AI State
+      let aiSettings = null;
+      let isAIGenerating = false;
+      let aiImages = [];
+      let aiRetryCount = 0;
+      const MAX_AI_RETRIES = 3;
+
+      // Selection state for Phase 1.5
+      let aiSelectedText = '';
+      let aiSelectionRange = null; // For rich mode
+      let aiSelectionStart = null; // For markdown mode
+      let aiSelectionEnd = null; // For markdown mode
+      let aiSelectionMode = null; // 'rich' or 'md'
+
+      // AI DOM Elements
+      const aiSettingsModal = document.getElementById('ai-settings-modal');
+      const aiSettingsBtn = document.getElementById('ai-settings-btn');
+      const aiSettingsCloseBtn = document.getElementById('ai-settings-modal-close');
+      const aiSettingsCancelBtn = document.getElementById('ai-settings-cancel-btn');
+      const aiSettingsSaveBtn = document.getElementById('ai-settings-save-btn');
+      const aiApiKeyInput = document.getElementById('ai-api-key');
+      const aiModelSelect = document.getElementById('ai-model-select');
+      const aiEnableSearch = document.getElementById('ai-enable-search');
+      const aiSystemPromptInput = document.getElementById('ai-system-prompt');
+
+      const aiFloatingInput = document.getElementById('ai-floating-input');
+      const aiModelSelector = document.getElementById('ai-model-selector');
+      const aiCloseBtn = document.getElementById('ai-close-btn');
+      const aiPromptInput = document.getElementById('ai-prompt-input');
+      const aiSendBtn = document.getElementById('ai-send-btn');
+      const aiSendBtnText = aiSendBtn.querySelector('.ai-btn-text');
+      const aiImageThumbnails = document.getElementById('ai-image-thumbnails');
+      const aiSelectionContext = document.getElementById('ai-selection-context');
+      const aiContextContent = document.getElementById('ai-context-content');
+      const aiContextRemoveBtn = document.getElementById('ai-context-remove-btn');
+      const aiModeReplaceBtn = document.getElementById('ai-mode-replace');
+      const aiModeInsertBtn = document.getElementById('ai-mode-insert');
+
+      const toolbar = document.querySelector('.toolbar');
+
+      // AI mode state (default: insert)
+      let aiInsertMode = true;
+
+      // AI generation control
+      let aiGenerationAborted = false;
+      let receivedGeneratedImage = null; // Store image received from AI generation
+
+      // Cursor position storage for insert mode
+      let savedCursorRange = null; // For rich mode
+      let savedCursorPosition = null; // For markdown mode
+
+      // UI State save timer
+      let uiStateSaveTimer = null;
+      function scheduleUIStateSave() {
+        if (uiStateSaveTimer) clearTimeout(uiStateSaveTimer);
+        uiStateSaveTimer = setTimeout(saveUIState, 500); // Debounce 500ms
+      }
+
+      // Toast notification
+      function showToast(message, duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), duration);
+      }
+
+      // Load AI settings
+      async function loadAISettings() {
+        if (!isElectron) return;
+
+        aiSettings = await window.electronAPI.getAISettings();
+        if (!aiSettings) {
+          aiSettings = {
+            apiKey: '',
+            defaultModel: AI_MODELS[0],
+            systemPrompt: DEFAULT_AI_SYSTEM_PROMPT,
+            enableSearch: true
+          };
+        }
+      }
+
+      // Open AI Settings Modal
+      function openAISettings() {
+        aiApiKeyInput.value = aiSettings?.apiKey || '';
+        aiModelSelect.value = aiSettings?.defaultModel || AI_MODELS[0];
+        aiEnableSearch.checked = aiSettings?.enableSearch !== false;
+        aiSystemPromptInput.value = aiSettings?.systemPrompt || DEFAULT_AI_SYSTEM_PROMPT;
+        aiSettingsModal.classList.add('is-visible');
+      }
+
+      // Close AI Settings Modal
+      function closeAISettings() {
+        aiSettingsModal.classList.remove('is-visible');
+      }
+
+      // Save AI Settings
+      async function saveAISettings() {
+        const apiKey = aiApiKeyInput.value.trim();
+        const model = aiModelSelect.value;
+        const systemPrompt = aiSystemPromptInput.value.trim();
+
+        if (!apiKey) {
+          showToast('Please enter an API key');
+          return;
+        }
+
+        aiSettings = {
+          apiKey,
+          defaultModel: model,
+          enableSearch: aiEnableSearch.checked,
+          systemPrompt: systemPrompt || DEFAULT_AI_SYSTEM_PROMPT
+        };
+
+        if (isElectron) {
+          const result = await window.electronAPI.saveAISettings(aiSettings);
+          if (result.success) {
+            showToast('AI settings saved successfully');
+            closeAISettings();
+            // Update floating input model selector
+            aiModelSelector.value = model;
+          } else {
+            showToast('Error saving settings: ' + result.error);
+          }
+        }
+      }
+
+      // Selection Context Functions
+      function captureSelection() {
+        const currentMode = rich.classList.contains('hidden') ? 'md' : 'rich';
+
+        if (currentMode === 'rich') {
+          const selection = window.getSelection();
+          if (selection && selection.toString().trim()) {
+            aiSelectedText = selection.toString().trim();
+            aiSelectionRange = selection.getRangeAt(0).cloneRange();
+            aiSelectionMode = 'rich';
+            return true;
+          }
+        } else {
+          const start = mdInput.selectionStart;
+          const end = mdInput.selectionEnd;
+          if (start !== end) {
+            aiSelectedText = mdInput.value.substring(start, end).trim();
+            aiSelectionStart = start;
+            aiSelectionEnd = end;
+            aiSelectionMode = 'md';
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      function showSelectionContext() {
+        if (aiSelectedText) {
+          aiContextContent.textContent = aiSelectedText;
+          aiSelectionContext.classList.add('has-selection');
+          aiPromptInput.placeholder = 'How should I transform this text?';
+        }
+      }
+
+      function clearSelectionContext() {
+        aiSelectedText = '';
+        aiSelectionRange = null;
+        aiSelectionStart = null;
+        aiSelectionEnd = null;
+        aiSelectionMode = null;
+        aiContextContent.textContent = '';
+        aiSelectionContext.classList.remove('has-selection');
+        aiPromptInput.placeholder = 'Ask AI to help with your note...';
+      }
+
+      // Toggle Floating Input
+      function toggleAIFloatingInput() {
+        if (aiFloatingInput.classList.contains('visible')) {
+          closeAIFloatingInput();
+        } else {
+          openAIFloatingInput();
+        }
+      }
+
+      function openAIFloatingInput() {
+        // Check if API key is configured
+        if (!aiSettings?.apiKey) {
+          openAISettings();
+          return;
+        }
+
+        // FIRST: Save cursor position BEFORE anything else
+        saveCursorPosition();
+
+        // THEN: Try to capture selection
+        const hasSelection = captureSelection();
+
+        aiFloatingInput.classList.add('visible');
+        aiPromptInput.focus();
+
+        // Set model selector to default
+        aiModelSelector.value = aiSettings.defaultModel;
+
+        // Show selection context if text was selected
+        if (hasSelection) {
+          showSelectionContext();
+        }
+      }
+
+      // Save cursor position from the main editors
+      function saveCursorPosition() {
+        const currentMode = root.getAttribute('data-mode') || 'rich';
+
+        if (currentMode === 'rich') {
+          // Save cursor position for rich editor
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            savedCursorRange = selection.getRangeAt(0).cloneRange();
+          } else {
+            // No selection, create range at end of rich editor
+            savedCursorRange = document.createRange();
+            savedCursorRange.selectNodeContents(rich);
+            savedCursorRange.collapse(false); // Collapse to end
+          }
+        } else {
+          // Save cursor position for markdown editor
+          savedCursorPosition = mdInput.selectionStart;
+        }
+      }
+
+      function closeAIFloatingInput() {
+        aiFloatingInput.classList.remove('visible');
+        aiPromptInput.value = '';
+        aiPromptInput.style.height = 'auto';
+        aiSendBtn.classList.remove('visible', 'generating');
+        aiSendBtnText.textContent = 'Generate →';
+        clearAIImages();
+        clearSelectionContext();
+      }
+
+      // Handle AI Prompt Input
+      aiPromptInput.addEventListener('input', () => {
+        // Auto-grow textarea
+        aiPromptInput.style.height = 'auto';
+        aiPromptInput.style.height = aiPromptInput.scrollHeight + 'px';
+
+        // Show/hide send button
+        if (aiPromptInput.value.trim()) {
+          aiSendBtn.classList.add('visible');
+        } else {
+          aiSendBtn.classList.remove('visible');
+        }
+      });
+
+      // Handle Enter key in AI prompt
+      aiPromptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          generateAIContent();
+        }
+      });
+
+      // Handle mode toggle buttons
+      aiModeReplaceBtn.addEventListener('click', () => {
+        aiInsertMode = false;
+        aiModeReplaceBtn.classList.add('is-active');
+        aiModeInsertBtn.classList.remove('is-active');
+        scheduleUIStateSave();
+      });
+
+      aiModeInsertBtn.addEventListener('click', () => {
+        aiInsertMode = true;
+        aiModeInsertBtn.classList.add('is-active');
+        aiModeReplaceBtn.classList.remove('is-active');
+        scheduleUIStateSave();
+      });
+
+      // Auto-save UI state on changes (for elements already defined)
+      aiModelSelector.addEventListener('change', scheduleUIStateSave);
+      aiPromptInput.addEventListener('input', scheduleUIStateSave);
+      rich.addEventListener('scroll', scheduleUIStateSave);
+      mdInput.addEventListener('scroll', scheduleUIStateSave);
+
+      // Selection Start Chat Button
+      const selectionStartChatBtn = document.getElementById('selection-start-chat-btn');
+      let selectionChatText = '';
+
+      // Show button on text selection
+      document.addEventListener('mouseup', () => {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+
+        if (selectedText && selectedText.length > 0) {
+          selectionChatText = selectedText;
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+
+          // Position button above selection
+          selectionStartChatBtn.style.left = `${rect.left + rect.width / 2 - 50}px`;
+          selectionStartChatBtn.style.top = `${rect.top - 45}px`;
+          selectionStartChatBtn.classList.add('visible');
+        } else {
+          selectionStartChatBtn.classList.remove('visible');
+        }
+      });
+
+      // Handle Start Chat button click
+      selectionStartChatBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        selectionStartChatBtn.classList.remove('visible');
+
+        // Pre-populate chat with selected text and LOCK it
+        chatSelectedText = selectionChatText;
+        chatSelectionLocked = true; // Prevent polling from clearing this
+
+        // Open chat sidebar
+        if (!chatSidebar.classList.contains('visible')) {
+          toggleChatSidebar();
+        }
+
+        // Show context in chat - needs to be done after sidebar opens
+        setTimeout(() => {
+          if (chatSelectedText) {
+            chatContextContent.textContent = chatSelectedText;
+            chatSelectionContext.classList.add('has-selection');
+          }
+          // Focus chat input
+          chatInput.focus();
+        }, 100);
+      });
+
+      // Image paste support
+      aiPromptInput.addEventListener('paste', async (e) => {
+        const items = e.clipboardData.items;
+        for (const item of items) {
+          if (item.type.indexOf('image') !== -1) {
+            e.preventDefault();
+            const blob = item.getAsFile();
+            await addAIImage(blob);
+          }
+        }
+      });
+
+      // Add image to AI input
+      async function addAIImage(blob) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageData = {
+            data: e.target.result.split(',')[1], // Remove data:image/png;base64, prefix
+            mimeType: blob.type,
+            preview: e.target.result
+          };
+
+          aiImages.push(imageData);
+          renderAIImageThumbnails();
+        };
+        reader.readAsDataURL(blob);
+      }
+
+      // Render image thumbnails
+      function renderAIImageThumbnails() {
+        if (aiImages.length === 0) {
+          aiImageThumbnails.innerHTML = '';
+          aiImageThumbnails.classList.remove('has-images');
+          return;
+        }
+
+        aiImageThumbnails.classList.add('has-images');
+        aiImageThumbnails.innerHTML = aiImages.map((img, index) => `
+          <div class="ai-image-thumb">
+            <img src="${img.preview}" alt="Pasted image ${index + 1}">
+            <button class="ai-image-remove" onclick="removeAIImage(${index})">&times;</button>
+          </div>
+        `).join('');
+      }
+
+      // Remove image
+      window.removeAIImage = function(index) {
+        aiImages.splice(index, 1);
+        renderAIImageThumbnails();
+      };
+
+      // Clear all images
+      function clearAIImages() {
+        aiImages = [];
+        renderAIImageThumbnails();
+      }
+
+      // Generate AI Content
+      async function generateAIContent() {
+        if (isAIGenerating) return;
+        if (!aiSettings?.apiKey) {
+          showToast('Please configure AI settings first');
+          openAISettings();
+          return;
+        }
+
+        const userPrompt = aiPromptInput.value.trim();
+        if (!userPrompt && aiImages.length === 0) {
+          showToast('Please enter a prompt or paste an image');
+          return;
+        }
+
+        // Get current note content or use selected text
+        const currentMode = await storage.get(KEY_MODE) || 'rich';
+        let contentToSend = '';
+
+        // Phase 1.5: Use selected text if available, otherwise use full note
+        if (aiSelectedText) {
+          contentToSend = aiSelectedText;
+        } else {
+          // Original Phase 1 behavior: use full note
+          if (currentMode === 'rich') {
+            contentToSend = rich.innerText.trim();
+          } else {
+            contentToSend = mdInput.value.trim();
+          }
+        }
+
+        // Combine content with user prompt
+        const fullPrompt = contentToSend
+          ? `${contentToSend}\n\n${userPrompt}`
+          : userPrompt;
+
+        isAIGenerating = true;
+        aiGenerationAborted = false;
+
+        // Transform button to "Stop" state
+        aiSendBtn.classList.add('generating');
+        aiSendBtnText.textContent = 'Stop Generation';
+        toolbar.classList.add('ai-generating');
+        aiRetryCount = 0;
+
+        try {
+          await performAIGeneration(fullPrompt, currentMode);
+        } catch (error) {
+          if (!aiGenerationAborted) {
+            console.error('AI generation error:', error);
+            showToast('Error: ' + error.message);
+          }
+        } finally {
+          isAIGenerating = false;
+
+          // Reset button to "Generate" state
+          aiSendBtn.classList.remove('generating');
+          aiSendBtnText.textContent = 'Generate →';
+          toolbar.classList.remove('ai-generating');
+        }
+      }
+
+      // Perform AI generation with retry
+      async function performAIGeneration(prompt, mode) {
+        try {
+          // Reset received image
+          receivedGeneratedImage = null;
+
+          // Check if aborted before starting
+          if (aiGenerationAborted) {
+            showToast('Generation stopped');
+            return;
+          }
+
+          const selectedModel = aiModelSelector.value;
+          const isImageModel = selectedModel === 'models/gemini-3-pro-image-preview';
+
+          const result = await window.electronAPI.generateContent(
+            prompt,
+            selectedModel,
+            aiImages
+          );
+
+          // Check if aborted after API call
+          if (aiGenerationAborted) {
+            showToast('Generation stopped');
+            return;
+          }
+
+          // For image models, wait for the image chunk to arrive via IPC
+          if (isImageModel) {
+            // Wait up to 2 seconds for image to arrive
+            let attempts = 0;
+            while (!receivedGeneratedImage && !result.image && attempts < 20) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              attempts++;
+            }
+            console.log('Floating: Image wait complete. receivedGeneratedImage:', receivedGeneratedImage, 'result.image:', result.image);
+          }
+
+          if (result.success) {
+            let contentToInject = result.content;
+
+            // Handle image generation - prioritize image over text
+            const imageData = receivedGeneratedImage || result.image;
+            if (imageData) {
+              // Use file path if available, otherwise use base64 data
+              const imageSrc = imageData.filePath
+                ? `file://${imageData.filePath}`
+                : `data:${imageData.mimeType};base64,${imageData.data}`;
+
+              // Images respect insert mode toggle
+              const isInsertMode = aiInsertMode;
+
+              if (mode === 'rich') {
+                // Use saved cursor position for rich mode
+                const range = savedCursorRange || (window.getSelection().rangeCount > 0 ? window.getSelection().getRangeAt(0) : null);
+
+                if (range) {
+                  // If not in insert mode and there's a selection, delete it first
+                  if (!isInsertMode && !range.collapsed) {
+                    range.deleteContents();
+                  }
+
+                  const imgTag = document.createElement('img');
+                  imgTag.src = imageSrc;
+                  imgTag.style.maxWidth = '100%';
+                  imgTag.style.borderRadius = '8px';
+                  imgTag.style.display = 'block';
+                  imgTag.style.margin = '8px 0';
+                  range.insertNode(imgTag);
+
+                  // Move cursor after image
+                  range.setStartAfter(imgTag);
+                  range.collapse(true);
+
+                  rich.dataset.hasContent = 'true';
+                  await saveRich();
+
+                  // Restore selection
+                  const selection = window.getSelection();
+                  selection.removeAllRanges();
+                  selection.addRange(range);
+
+                  // Focus back to rich editor
+                  rich.focus();
+                }
+              } else {
+                // Use saved cursor position for markdown mode
+                const cursorPos = savedCursorPosition !== null ? savedCursorPosition : mdInput.selectionStart;
+
+                if (isInsertMode) {
+                  // Insert mode: insert at saved cursor
+                  const before = mdInput.value.substring(0, cursorPos);
+                  const after = mdInput.value.substring(cursorPos);
+                  mdInput.value = before + `\n![Generated Image](${imageSrc})\n` + after;
+                } else {
+                  // Replace mode: use selection if available
+                  const selectionEnd = mdInput.selectionEnd;
+                  const before = mdInput.value.substring(0, cursorPos);
+                  const after = mdInput.value.substring(selectionEnd || cursorPos);
+                  mdInput.value = before + `\n![Generated Image](${imageSrc})\n` + after;
+                }
+
+                updateMarkdownPreview();
+                await saveMarkdown();
+
+                // Focus back to markdown editor
+                mdInput.focus();
+              }
+
+              closeAIFloatingInput();
+              showToast('Image generated and inserted');
+              return;
+            }
+
+            // Check if insert mode is enabled
+            const isInsertMode = aiInsertMode;
+
+            if (isInsertMode) {
+              // INSERT MODE: Insert at SAVED cursor position from main editor
+              // Strip trailing whitespace/newlines in insert mode for cleaner insertion
+              const cleanContent = contentToInject.trimEnd();
+
+              if (mode === 'rich') {
+                // Rich mode: Insert at saved cursor position
+                if (savedCursorRange) {
+                  // Parse markdown to HTML
+                  const htmlContent = marked.parse(cleanContent);
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = htmlContent;
+
+                  // Insert at saved cursor position
+                  const fragment = document.createDocumentFragment();
+                  while (tempDiv.firstChild) {
+                    fragment.appendChild(tempDiv.firstChild);
+                  }
+
+                  // Use the saved range
+                  savedCursorRange.insertNode(fragment);
+
+                  // Move cursor after inserted content
+                  savedCursorRange.collapse(false);
+
+                  rich.dataset.hasContent = 'true';
+                  await saveRich();
+
+                  // Restore cursor position
+                  const selection = window.getSelection();
+                  selection.removeAllRanges();
+                  selection.addRange(savedCursorRange);
+
+                  // Focus back to rich editor
+                  rich.focus();
+                }
+              } else {
+                // Markdown mode: Insert at saved cursor position
+                const cursorPos = savedCursorPosition !== null ? savedCursorPosition : mdInput.selectionStart;
+                const before = mdInput.value.substring(0, cursorPos);
+                const after = mdInput.value.substring(cursorPos);
+                mdInput.value = before + cleanContent + after;
+
+                // Move cursor after inserted content
+                const newCursorPos = cursorPos + cleanContent.length;
+                mdInput.setSelectionRange(newCursorPos, newCursorPos);
+
+                updateMarkdownPreview();
+                await saveMarkdown();
+
+                // Focus back to markdown editor
+                mdInput.focus();
+              }
+            } else {
+              // REPLACE MODE: Replace selection or entire note
+              if (aiSelectedText && aiSelectionMode) {
+                // Replace only the selected text
+                if (aiSelectionMode === 'rich' && aiSelectionRange) {
+                  // Rich mode: Replace selection using Range API
+                  try {
+                    aiSelectionRange.deleteContents();
+
+                    // Parse markdown to HTML for rich mode
+                    const htmlContent = marked.parse(contentToInject);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = htmlContent;
+
+                    // Insert all nodes from the temp div
+                    const fragment = document.createDocumentFragment();
+                    while (tempDiv.firstChild) {
+                      fragment.appendChild(tempDiv.firstChild);
+                    }
+                    aiSelectionRange.insertNode(fragment);
+
+                    rich.dataset.hasContent = 'true';
+                    await saveRich();
+                  } catch (e) {
+                    console.error('Error replacing selection in rich mode:', e);
+                    showToast('Error replacing selection');
+                  }
+                } else if (aiSelectionMode === 'md' && aiSelectionStart !== null && aiSelectionEnd !== null) {
+                  // Markdown mode: Replace text between selectionStart and selectionEnd
+                  const before = mdInput.value.substring(0, aiSelectionStart);
+                  const after = mdInput.value.substring(aiSelectionEnd);
+                  mdInput.value = before + contentToInject + after;
+
+                  // Set cursor position after inserted content
+                  const newCursorPos = aiSelectionStart + contentToInject.length;
+                  mdInput.setSelectionRange(newCursorPos, newCursorPos);
+
+                  updateMarkdownPreview();
+                  await saveMarkdown();
+                }
+              } else {
+                // Replace entire note
+                if (mode === 'rich') {
+                  // Parse markdown to HTML for rich mode
+                  try {
+                    const htmlContent = marked.parse(contentToInject);
+                    rich.innerHTML = htmlContent;
+                    rich.dataset.hasContent = 'true';
+                  } catch (e) {
+                    // Fallback to raw content if markdown parsing fails
+                    rich.innerHTML = contentToInject;
+                  }
+                  await saveRich();
+                } else {
+                  mdInput.value = contentToInject;
+                  updateMarkdownPreview();
+                  await saveMarkdown();
+                }
+              }
+            }
+
+            closeAIFloatingInput();
+            showToast('AI generation complete');
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (error) {
+          // Check if aborted
+          if (aiGenerationAborted) {
+            showToast('Generation stopped');
+            return;
+          }
+
+          // Auto-retry logic
+          if (aiRetryCount < MAX_AI_RETRIES) {
+            aiRetryCount++;
+            showToast(`Retrying... (${aiRetryCount}/${MAX_AI_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return performAIGeneration(prompt, mode);
+          } else {
+            // Ask user if they want to retry
+            const retry = await showConfirm(
+              `AI generation failed after ${MAX_AI_RETRIES} attempts. Try again?`,
+              'Error'
+            );
+            if (retry) {
+              aiRetryCount = 0;
+              return performAIGeneration(prompt, mode);
+            } else {
+              throw error;
+            }
+          }
+        }
+      }
+
+      // Stop AI generation
+      function stopAIGeneration() {
+        if (isAIGenerating) {
+          aiGenerationAborted = true;
+          showToast('Stopping generation...');
+        }
+      }
+
+      // Event Listeners for AI Settings
+      aiSettingsBtn.addEventListener('click', openAISettings);
+      aiSettingsCloseBtn.addEventListener('click', closeAISettings);
+      aiSettingsCancelBtn.addEventListener('click', closeAISettings);
+      aiSettingsSaveBtn.addEventListener('click', saveAISettings);
+
+      // Event Listeners for AI Floating Input
+      aiCloseBtn.addEventListener('click', closeAIFloatingInput);
+      aiContextRemoveBtn.addEventListener('click', clearSelectionContext);
+      aiSendBtn.addEventListener('click', () => {
+        if (aiSendBtn.classList.contains('generating')) {
+          stopAIGeneration();
+        } else {
+          generateAIContent();
+        }
+      });
+
+      // Close AI Settings modal when clicking overlay
+      aiSettingsModal.addEventListener('click', (e) => {
+        if (e.target === aiSettingsModal) {
+          closeAISettings();
+        }
+      });
+
+      // Keyboard shortcuts for AI
+      window.addEventListener('keydown', (e) => {
+        // Cmd+Y to toggle AI floating input (but not Cmd+Shift+Y)
+        if ((e.metaKey || e.ctrlKey) && e.key === 'y' && !e.shiftKey) {
+          e.preventDefault();
+          toggleAIFloatingInput();
+          return;
+        }
+
+        // Escape to close AI floating input
+        if (e.key === 'Escape' && aiFloatingInput.classList.contains('visible')) {
+          e.preventDefault();
+          closeAIFloatingInput();
+          return;
+        }
+      });
+
+      // UI State Persistence
+      async function saveUIState() {
+        if (!isElectron) return;
+
+        const state = {
+          models: {
+            floating: aiModelSelector.value,
+            chat: chatModelSelector.value
+          },
+          modes: {
+            insert: aiInsertMode,
+            editor: rich.classList.contains('hidden') ? 'markdown' : 'rich'
+          },
+          visibility: {
+            chatSidebar: chatSidebar.classList.contains('visible'),
+            floatingInput: aiFloatingInput.classList.contains('visible')
+          },
+          inputs: {
+            floatingPrompt: aiPromptInput.value,
+            chatPrompt: chatInput.value
+          },
+          scroll: {
+            rich: rich.scrollTop,
+            markdown: mdInput.scrollTop,
+            chat: chatMessagesDiv.scrollTop
+          },
+          cursor: {
+            markdown: {
+              start: mdInput.selectionStart,
+              end: mdInput.selectionEnd
+            }
+          },
+          chat: {
+            includeNote: chatIncludeNoteCheckbox?.checked || false
+          }
+        };
+
+        try {
+          await window.electronAPI.saveUIState(state);
+        } catch (err) {
+          console.error('Failed to save UI state:', err);
+        }
+      }
+
+      async function loadUIState() {
+        if (!isElectron) return;
+
+        try {
+          const state = await window.electronAPI.getUIState();
+          if (!state) return;
+
+          // Restore models
+          if (state.models) {
+            if (state.models.floating) aiModelSelector.value = state.models.floating;
+            if (state.models.chat) chatModelSelector.value = state.models.chat;
+          }
+
+          // Restore modes
+          if (state.modes) {
+            if (typeof state.modes.insert === 'boolean') {
+              aiInsertMode = state.modes.insert;
+              if (aiInsertMode) {
+                aiModeInsertBtn.classList.add('is-active');
+                aiModeReplaceBtn.classList.remove('is-active');
+              } else {
+                aiModeReplaceBtn.classList.add('is-active');
+                aiModeInsertBtn.classList.remove('is-active');
+              }
+            }
+          }
+
+          // Restore inputs
+          if (state.inputs) {
+            if (state.inputs.floatingPrompt) aiPromptInput.value = state.inputs.floatingPrompt;
+            if (state.inputs.chatPrompt) chatInput.value = state.inputs.chatPrompt;
+          }
+
+          // Restore chat sidebar visibility
+          if (state.visibility?.chatSidebar) {
+            chatSidebar.classList.add('visible');
+            startChatSelectionMonitoring();
+          }
+
+          // Restore scroll positions (after content loads)
+          setTimeout(() => {
+            if (state.scroll) {
+              if (state.scroll.rich) rich.scrollTop = state.scroll.rich;
+              if (state.scroll.markdown) mdInput.scrollTop = state.scroll.markdown;
+              if (state.scroll.chat) chatMessagesDiv.scrollTop = state.scroll.chat;
+            }
+
+            // Restore cursor position
+            if (state.cursor?.markdown) {
+              mdInput.selectionStart = state.cursor.markdown.start;
+              mdInput.selectionEnd = state.cursor.markdown.end;
+            }
+          }, 100);
+
+          // Restore chat settings
+          if (state.chat?.includeNote && chatIncludeNoteCheckbox) {
+            chatIncludeNoteCheckbox.checked = true;
+          }
+
+        } catch (err) {
+          console.error('Failed to load UI state:', err);
+        }
+      }
+
+      // Initialize AI settings on load
+      if (isElectron) {
+        loadAISettings();
+        loadUIState(); // Load UI state
+
+        // Listen for image chunks from AI generation
+        window.electronAPI.onImageChunk((imageData) => {
+          receivedGeneratedImage = imageData;
+        });
+      }
+
+      // Initialize Lucide icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+
+      // ========== CHAT SIDEBAR (Phase 3) ==========
+
+      // Chat Constants
+      const KEY_CHAT_SESSIONS = 'chatSessions';
+      const KEY_CURRENT_CHAT = 'currentChatId';
+
+      // Chat State
+      let currentChatSession = null;
+      let chatMessages = [];
+      let chatSelectedText = '';
+      let chatSelectionRange = null;
+      let chatSelectionStart = null;
+      let chatSelectionEnd = null;
+      let chatSelectionMode = null;
+      let chatSelectionLocked = false; // Prevent polling from clearing manually set selection
+      let isChatGenerating = false;
+      let chatImages = [];
+
+      // Chat DOM Elements
+      const chatSidebar = document.getElementById('chat-sidebar');
+      const chatMessagesContainer = document.getElementById('chat-messages');
+      const chatInput = document.getElementById('chat-input');
+      const chatSendBtn = document.getElementById('chat-send-btn');
+      const chatModelSelector = document.getElementById('chat-model-selector');
+      const chatCloseBtn = document.getElementById('chat-close-btn');
+      const chatNewBtn = document.getElementById('chat-new-btn');
+
+      // Auto-save UI state for chat elements (now that they're defined)
+      chatModelSelector.addEventListener('change', scheduleUIStateSave);
+      chatInput.addEventListener('input', scheduleUIStateSave);
+      chatMessagesContainer.addEventListener('scroll', scheduleUIStateSave);
+      const chatHistoryBtn = document.getElementById('chat-history-btn');
+      const chatHistoryPanel = document.getElementById('chat-history-panel');
+      const chatHistoryCloseBtn = document.getElementById('chat-history-close-btn');
+      const chatHistoryList = document.getElementById('chat-history-list');
+      const chatSelectionContext = document.getElementById('chat-selection-context');
+      const chatContextContent = document.getElementById('chat-context-content');
+      const chatContextRemoveBtn = document.getElementById('chat-context-remove-btn');
+      const chatIncludeNote = document.getElementById('chat-include-note');
+      const chatImageThumbnails = document.getElementById('chat-image-thumbnails');
+
+      // Toggle Chat Sidebar
+      function toggleChatSidebar() {
+        const isVisible = chatSidebar.classList.contains('visible');
+        if (isVisible) {
+          closeChatSidebar();
+        } else {
+          openChatSidebar();
+        }
+      }
+
+      function openChatSidebar() {
+        if (!aiSettings?.apiKey) {
+          openAISettings();
+          return;
+        }
+
+        chatSidebar.classList.add('visible');
+
+        // Try to capture selection
+        captureChatSelection();
+
+        // Set model to default
+        chatModelSelector.value = aiSettings.defaultModel;
+
+        // Load or create session
+        if (!currentChatSession) {
+          createNewChatSession();
+        }
+
+        // Start monitoring selection changes
+        startSelectionMonitoring();
+
+        // Re-initialize Lucide icons for new elements
+        setTimeout(() => {
+          if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+          }
+        }, 100);
+
+        chatInput.focus();
+        scheduleUIStateSave();
+      }
+
+      function closeChatSidebar() {
+        chatSidebar.classList.remove('visible');
+        chatHistoryPanel.classList.remove('visible');
+
+        // Stop monitoring selection changes
+        stopSelectionMonitoring();
+
+        scheduleUIStateSave();
+      }
+
+      // Selection monitoring for chat
+      let selectionMonitorInterval = null;
+
+      function startSelectionMonitoring() {
+        // Check for selection changes every 300ms
+        selectionMonitorInterval = setInterval(() => {
+          if (!chatSidebar.classList.contains('visible')) {
+            stopSelectionMonitoring();
+            return;
+          }
+          captureChatSelection();
+        }, 300);
+      }
+
+      function stopSelectionMonitoring() {
+        if (selectionMonitorInterval) {
+          clearInterval(selectionMonitorInterval);
+          selectionMonitorInterval = null;
+        }
+      }
+
+      // Capture selection for chat context
+      function captureChatSelection() {
+        // Don't clear if selection is locked (manually set from Start Chat button)
+        if (chatSelectionLocked) {
+          return;
+        }
+
+        const currentMode = rich.classList.contains('hidden') ? 'md' : 'rich';
+
+        if (currentMode === 'rich') {
+          const selection = window.getSelection();
+          if (selection && selection.toString().trim()) {
+            chatSelectedText = selection.toString().trim();
+            chatSelectionRange = selection.getRangeAt(0).cloneRange();
+            chatSelectionMode = 'rich';
+            showChatSelectionContext();
+            return;
+          }
+        } else {
+          const start = mdInput.selectionStart;
+          const end = mdInput.selectionEnd;
+          if (start !== end) {
+            chatSelectedText = mdInput.value.substring(start, end).trim();
+            chatSelectionStart = start;
+            chatSelectionEnd = end;
+            chatSelectionMode = 'md';
+            showChatSelectionContext();
+            return;
+          }
+        }
+
+        clearChatSelectionContext();
+      }
+
+      function showChatSelectionContext() {
+        if (chatSelectedText) {
+          chatContextContent.textContent = chatSelectedText;
+          chatSelectionContext.classList.add('has-selection');
+        }
+      }
+
+      function clearChatSelectionContext() {
+        chatSelectedText = '';
+        chatSelectionRange = null;
+        chatSelectionStart = null;
+        chatSelectionEnd = null;
+        chatSelectionMode = null;
+        chatSelectionLocked = false; // Unlock when manually cleared
+        chatContextContent.textContent = '';
+        chatSelectionContext.classList.remove('has-selection');
+      }
+
+      // Chat Image Functions
+      async function addChatImage(blob) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageData = {
+            data: e.target.result.split(',')[1], // Remove data:image/png;base64, prefix
+            mimeType: blob.type,
+            preview: e.target.result
+          };
+
+          chatImages.push(imageData);
+          renderChatImageThumbnails();
+        };
+        reader.readAsDataURL(blob);
+      }
+
+      function renderChatImageThumbnails() {
+        if (chatImages.length === 0) {
+          chatImageThumbnails.innerHTML = '';
+          chatImageThumbnails.classList.remove('has-images');
+          return;
+        }
+
+        chatImageThumbnails.classList.add('has-images');
+        chatImageThumbnails.innerHTML = chatImages.map((img, index) => `
+          <div class="chat-image-thumb">
+            <img src="${img.preview}" alt="Pasted image ${index + 1}">
+            <button class="chat-image-remove" onclick="removeChatImage(${index})">&times;</button>
+          </div>
+        `).join('');
+      }
+
+      window.removeChatImage = function(index) {
+        chatImages.splice(index, 1);
+        renderChatImageThumbnails();
+      };
+
+      function clearChatImages() {
+        chatImages = [];
+        renderChatImageThumbnails();
+      }
+
+      // Chat Session Management
+      function createNewChatSession() {
+        currentChatSession = {
+          id: Date.now().toString(),
+          title: 'New Chat',
+          messages: [],
+          createdAt: new Date().toISOString(),
+          model: chatModelSelector.value
+        };
+        chatMessages = [];
+        renderChatMessages();
+        saveChatSession();
+      }
+
+      function saveChatSession() {
+        if (!currentChatSession || !isElectron) return;
+
+        currentChatSession.messages = chatMessages;
+
+        // Auto-title from first user message
+        if (chatMessages.length > 0 && currentChatSession.title === 'New Chat') {
+          const firstUserMsg = chatMessages.find(m => m.role === 'user');
+          if (firstUserMsg) {
+            currentChatSession.title = firstUserMsg.content.substring(0, 50);
+          }
+        }
+
+        storage.get(KEY_CHAT_SESSIONS).then(sessions => {
+          const allSessions = sessions || [];
+          const existingIndex = allSessions.findIndex(s => s.id === currentChatSession.id);
+
+          if (existingIndex >= 0) {
+            allSessions[existingIndex] = currentChatSession;
+          } else {
+            allSessions.unshift(currentChatSession);
+          }
+
+          // Keep only last 100 sessions
+          if (allSessions.length > 100) {
+            allSessions.length = 100;
+          }
+
+          storage.set(KEY_CHAT_SESSIONS, allSessions);
+          storage.set(KEY_CURRENT_CHAT, currentChatSession.id);
+        });
+      }
+
+      function loadChatSession(sessionId) {
+        storage.get(KEY_CHAT_SESSIONS).then(sessions => {
+          const session = sessions?.find(s => s.id === sessionId);
+          if (session) {
+            currentChatSession = session;
+            chatMessages = session.messages || [];
+            chatModelSelector.value = session.model || aiSettings.defaultModel;
+            renderChatMessages();
+            chatHistoryPanel.classList.remove('visible');
+          }
+        });
+      }
+
+      // Send Chat Message
+      async function sendChatMessage() {
+        if (isChatGenerating) return;
+
+        const userMessage = chatInput.value.trim();
+        if (!userMessage && chatImages.length === 0) {
+          showToast('Please enter a message or paste an image');
+          return;
+        }
+
+        // Build context
+        let contextParts = [];
+
+        // Add selected text if available
+        if (chatSelectedText) {
+          contextParts.push(`Selected text:\n${chatSelectedText}`);
+        }
+
+        // Add full note if checkbox is checked
+        if (chatIncludeNote.checked) {
+          const currentMode = await storage.get(KEY_MODE) || 'rich';
+          let noteContent = '';
+          if (currentMode === 'rich') {
+            noteContent = rich.innerText.trim();
+          } else {
+            noteContent = mdInput.value.trim();
+          }
+          if (noteContent) {
+            contextParts.push(`Current note:\n${noteContent}`);
+          }
+        }
+
+        // Combine context with user message
+        let fullMessage = userMessage;
+        if (contextParts.length > 0) {
+          fullMessage = `${contextParts.join('\n\n---\n\n')}\n\n---\n\nQuestion: ${userMessage}`;
+        }
+
+        // Add user message to chat
+        const userMsg = {
+          role: 'user',
+          content: userMessage,
+          timestamp: new Date().toISOString()
+        };
+        chatMessages.push(userMsg);
+        renderChatMessages();
+
+        // Clear input
+        chatInput.value = '';
+        chatInput.style.height = 'auto';
+
+        // Start AI response
+        isChatGenerating = true;
+        chatSendBtn.disabled = true;
+
+        const aiMsg = {
+          role: 'ai',
+          content: '',
+          thinking: true,
+          timestamp: new Date().toISOString()
+        };
+        chatMessages.push(aiMsg);
+        const aiMsgIndex = chatMessages.length - 1;
+        renderChatMessages();
+
+        try {
+          const model = chatModelSelector.value;
+          const isImageModel = model === 'models/gemini-3-pro-image-preview';
+
+          // Reset received image
+          receivedGeneratedImage = null;
+
+          const result = await window.electronAPI.generateContent(
+            fullMessage,
+            model,
+            chatImages
+          );
+
+          // For image models, wait for the image chunk to arrive via IPC
+          if (isImageModel) {
+            // Wait up to 2 seconds for image to arrive
+            let attempts = 0;
+            while (!receivedGeneratedImage && !result.image && attempts < 20) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              attempts++;
+            }
+            console.log('Image wait complete. receivedGeneratedImage:', receivedGeneratedImage, 'result.image:', result.image);
+          }
+
+          // Clear images after sending
+          clearChatImages();
+
+          if (result.success) {
+            chatMessages[aiMsgIndex].thinking = false;
+
+            // Prioritize received image over result.image
+            const finalImage = receivedGeneratedImage || result.image;
+
+            if (finalImage) {
+              // If we have an image, don't show text
+              chatMessages[aiMsgIndex].content = '';
+              chatMessages[aiMsgIndex].image = finalImage;
+              console.log('Chat: Using image:', finalImage);
+            } else {
+              // No image, show text
+              chatMessages[aiMsgIndex].content = result.content;
+              console.log('Chat: No image found, using text');
+            }
+            renderChatMessages();
+            saveChatSession();
+          } else {
+            throw new Error(result.error);
+          }
+        } catch (error) {
+          console.error('Chat error:', error);
+          showToast('Error: ' + error.message);
+          chatMessages.splice(aiMsgIndex, 1);
+          renderChatMessages();
+        } finally {
+          isChatGenerating = false;
+          chatSendBtn.disabled = false;
+        }
+      }
+
+      // Render Chat Messages
+      function renderChatMessages() {
+        chatMessagesContainer.innerHTML = '';
+
+        chatMessages.forEach((msg, index) => {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = `chat-message ${msg.role}`;
+
+          const headerDiv = document.createElement('div');
+          headerDiv.className = 'chat-message-header';
+          headerDiv.innerHTML = `
+            <i data-lucide="${msg.role === 'user' ? 'user' : 'bot'}" width="12" height="12"></i>
+            <span>${msg.role === 'user' ? 'You' : 'AI'}</span>
+          `;
+
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'chat-message-content';
+
+          // Show thinking indicator
+          if (msg.thinking) {
+            contentDiv.innerHTML = '<div class="thinking-indicator">Thinking<span class="thinking-dots"></span></div>';
+          } else if (msg.role === 'ai' && msg.content) {
+            // Parse markdown for AI messages
+            try {
+              contentDiv.innerHTML = marked.parse(msg.content);
+              // Highlight code blocks
+              contentDiv.querySelectorAll('pre code').forEach((block) => {
+                if (typeof hljs !== 'undefined') {
+                  hljs.highlightElement(block);
+                }
+              });
+            } catch (e) {
+              contentDiv.textContent = msg.content;
+            }
+          } else {
+            contentDiv.textContent = msg.content;
+          }
+
+          // Add image if present
+          if (msg.image) {
+            // Use file path if available, otherwise use base64 data
+            const imageDataUrl = msg.image.filePath
+              ? `file://${msg.image.filePath}`
+              : `data:${msg.image.mimeType};base64,${msg.image.data}`;
+            const imageDiv = document.createElement('div');
+            imageDiv.className = 'generated-image';
+            imageDiv.innerHTML = `
+              <div class="image-container">
+                <img src="${imageDataUrl}" alt="Generated image" />
+                <div class="image-overlay-actions">
+                  <button class="image-icon-btn" onclick="copyChatImage(${index})" title="Copy image">
+                    <i data-lucide="copy" width="16" height="16"></i>
+                  </button>
+                  <button class="image-icon-btn" onclick="downloadChatImage(${index})" title="Download">
+                    <i data-lucide="download" width="16" height="16"></i>
+                  </button>
+                  <button class="image-icon-btn" onclick="openChatImageInTab(${index})" title="Open in tab">
+                    <i data-lucide="external-link" width="16" height="16"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+            contentDiv.appendChild(imageDiv);
+          }
+
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'chat-message-actions';
+
+          if (msg.role === 'ai' && !msg.thinking) {
+            actionsDiv.innerHTML = `
+              <button class="chat-message-action-btn" onclick="copyChatMessage(${index})">
+                <i data-lucide="copy" width="12" height="12"></i>
+                Copy
+              </button>
+              <button class="chat-message-action-btn" onclick="addChatMessageToNote(${index})">
+                <i data-lucide="arrow-down-to-line" width="12" height="12"></i>
+                Add to note
+              </button>
+            `;
+          }
+
+          messageDiv.appendChild(headerDiv);
+          messageDiv.appendChild(contentDiv);
+          if (msg.role === 'ai' && !msg.thinking) {
+            messageDiv.appendChild(actionsDiv);
+          }
+
+          chatMessagesContainer.appendChild(messageDiv);
+        });
+
+        // Scroll to bottom
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+
+        // Re-initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+          lucide.createIcons();
+        }
+      }
+
+      // Copy chat message
+      window.copyChatMessage = function(index) {
+        const msg = chatMessages[index];
+        if (msg) {
+          navigator.clipboard.writeText(msg.content).then(() => {
+            showToast('Copied to clipboard');
+          });
+        }
+      };
+
+      // Copy chat image to clipboard
+      window.copyChatImage = async function(index) {
+        const msg = chatMessages[index];
+        if (msg?.image) {
+          try {
+            const imageSrc = msg.image.filePath || `data:${msg.image.mimeType};base64,${msg.image.data}`;
+            const response = await fetch(imageSrc);
+            const blob = await response.blob();
+            await navigator.clipboard.write([
+              new ClipboardItem({ [blob.type]: blob })
+            ]);
+            showToast('Image copied to clipboard');
+          } catch (err) {
+            console.error('Copy failed:', err);
+            showToast('Failed to copy image');
+          }
+        }
+      };
+
+      // Download chat image
+      window.downloadChatImage = function(index) {
+        const msg = chatMessages[index];
+        if (msg?.image) {
+          const imageSrc = msg.image.filePath
+            ? `file://${msg.image.filePath}`
+            : `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          const link = document.createElement('a');
+          link.href = imageSrc;
+          link.download = `generated-image-${Date.now()}.png`;
+          link.click();
+          showToast('Image downloaded');
+        }
+      };
+
+      // Open chat image in new tab
+      window.openChatImageInTab = function(index) {
+        const msg = chatMessages[index];
+        if (msg?.image) {
+          const imageSrc = msg.image.filePath
+            ? `file://${msg.image.filePath}`
+            : `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          window.open(imageSrc, '_blank');
+        }
+      };
+
+      // Add chat message to note
+      window.addChatMessageToNote = async function(index) {
+        const msg = chatMessages[index];
+        if (!msg) return;
+
+        const currentMode = await storage.get(KEY_MODE) || 'rich';
+
+        // Handle image
+        if (msg.image) {
+          const imageDataUrl = `data:${msg.image.mimeType};base64,${msg.image.data}`;
+          if (currentMode === 'rich') {
+            rich.innerHTML += `<br><img src="${imageDataUrl}" style="max-width: 100%; border-radius: 8px;" />`;
+            rich.dataset.hasContent = 'true';
+            await saveRich();
+          } else {
+            mdInput.value += `\n\n![Generated Image](${imageDataUrl})\n`;
+            updateMarkdownPreview();
+            await saveMarkdown();
+          }
+          showToast('Image added to note');
+          return;
+        }
+
+        // Handle text content
+        const content = msg.content;
+
+        if (currentMode === 'rich') {
+          // Check cursor position
+          const selection = window.getSelection();
+          if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const container = range.commonAncestorContainer;
+
+            // Check if at beginning of line
+            const atStart = range.startOffset === 0;
+
+            if (atStart && container.nodeType === Node.ELEMENT_NODE) {
+              // Insert at cursor
+              const htmlContent = marked.parse(content);
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = htmlContent;
+
+              const fragment = document.createDocumentFragment();
+              while (tempDiv.firstChild) {
+                fragment.appendChild(tempDiv.firstChild);
+              }
+
+              range.insertNode(fragment);
+            } else {
+              // Append to end
+              const htmlContent = marked.parse(content);
+              rich.innerHTML += '<br>' + htmlContent;
+            }
+
+            rich.dataset.hasContent = 'true';
+            await saveRich();
+          }
+        } else {
+          // Markdown mode - always append
+          mdInput.value += '\n\n' + content;
+          updateMarkdownPreview();
+          await saveMarkdown();
+        }
+
+        showToast('Added to note');
+      };
+
+      // Show chat history
+      function showChatHistory() {
+        storage.get(KEY_CHAT_SESSIONS).then(sessions => {
+          const allSessions = sessions || [];
+
+          chatHistoryList.innerHTML = '';
+
+          if (allSessions.length === 0) {
+            chatHistoryList.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">No chat history</p>';
+          } else {
+            allSessions.forEach(session => {
+              const item = document.createElement('div');
+              item.className = 'chat-history-item';
+              item.onclick = () => loadChatSession(session.id);
+
+              const firstMsg = session.messages?.find(m => m.role === 'user');
+              const preview = firstMsg ? firstMsg.content.substring(0, 60) + '...' : 'Empty chat';
+
+              const date = new Date(session.createdAt).toLocaleString();
+
+              item.innerHTML = `
+                <div class="chat-history-item-title">${session.title}</div>
+                <div class="chat-history-item-date">${date}</div>
+                <div class="chat-history-item-preview">${preview}</div>
+              `;
+
+              chatHistoryList.appendChild(item);
+            });
+          }
+
+          chatHistoryPanel.classList.add('visible');
+        });
+      }
+
+      // Chat Input Auto-grow
+      chatInput.addEventListener('input', () => {
+        chatInput.style.height = 'auto';
+        chatInput.style.height = chatInput.scrollHeight + 'px';
+      });
+
+      // Chat Input Enter to Send
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          sendChatMessage();
+        }
+      });
+
+      // Chat Input Image Paste
+      chatInput.addEventListener('paste', async (e) => {
+        const items = e.clipboardData.items;
+        for (const item of items) {
+          if (item.type.indexOf('image') !== -1) {
+            e.preventDefault();
+            const blob = item.getAsFile();
+            await addChatImage(blob);
+          }
+        }
+      });
+
+      // Chat Event Listeners
+      chatSendBtn.addEventListener('click', sendChatMessage);
+      chatCloseBtn.addEventListener('click', closeChatSidebar);
+      chatNewBtn.addEventListener('click', createNewChatSession);
+      chatHistoryBtn.addEventListener('click', showChatHistory);
+      chatHistoryCloseBtn.addEventListener('click', () => {
+        chatHistoryPanel.classList.remove('visible');
+      });
+      chatContextRemoveBtn.addEventListener('click', clearChatSelectionContext);
+
+      // Chat Keyboard Shortcut: Cmd+Shift+Y
+      window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'y') {
+          e.preventDefault();
+          toggleChatSidebar();
+        }
+      });
+
+      // ========== END AI FUNCTIONALITY ==========
     </script>
   </body>
 </html>
