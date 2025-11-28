@@ -21,5 +21,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // UI State persistence
   saveUIState: (uiState) => ipcRenderer.invoke('save-ui-state', uiState),
-  getUIState: () => ipcRenderer.invoke('get-ui-state')
+  getUIState: () => ipcRenderer.invoke('get-ui-state'),
+
+  // Download/export
+  downloadMarkdown: (content, suggestedName) => ipcRenderer.invoke('download-markdown', content, suggestedName)
 });
