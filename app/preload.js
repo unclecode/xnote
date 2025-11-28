@@ -12,6 +12,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.send('window-close'),
   quitApp: () => ipcRenderer.send('app-quit'),
 
+  // AI APIs
+  generateContent: (content, model, images) => ipcRenderer.invoke('ai-generate-content', content, model, images),
+  saveAISettings: (settings) => ipcRenderer.invoke('ai-save-settings', settings),
+  getAISettings: () => ipcRenderer.invoke('ai-get-settings'),
+  onContentChunk: (callback) => ipcRenderer.on('ai-content-chunk', (_, chunk) => callback(chunk)),
+  onImageChunk: (callback) => ipcRenderer.on('ai-image-chunk', (_, imageData) => callback(imageData)),
+
+  // UI State persistence
+  saveUIState: (uiState) => ipcRenderer.invoke('save-ui-state', uiState),
+  getUIState: () => ipcRenderer.invoke('get-ui-state'),
+
   // Download/export
   downloadMarkdown: (content, suggestedName) => ipcRenderer.invoke('download-markdown', content, suggestedName),
 

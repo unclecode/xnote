@@ -2,19 +2,31 @@ const { app, BrowserWindow, Tray, Menu, globalShortcut, ipcMain, nativeImage, sy
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
+const { GoogleGenAI } = require('@google/genai');
+const crypto = require('crypto');
 
 // Data directory
 const dataDir = path.join(os.homedir(), '.xnote');
 const dataFile = path.join(dataDir, 'data.json');
+const imagesDir = path.join(dataDir, 'images');
 
 // Ensure data directory exists
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
+// Ensure images directory exists
+if (!fs.existsSync(imagesDir)) {
+  fs.mkdirSync(imagesDir, { recursive: true });
+}
+
 let mainWindow = null;
 let tray = null;
 let isQuitting = false;
+let genAI = null;
+
+// Default system prompt for AI
+const DEFAULT_SYSTEM_PROMPT = `You are an AI assistant helping to draft and refine notes. Return ONLY the requested content wrapped in <result></result> XML tags. No explanations, greetings, or commentary. Just the content.`;
 
 // Load data from file
 function loadData() {
@@ -203,6 +215,192 @@ ipcMain.on('app-quit', () => {
   app.quit();
 });
 
+// AI-related functions
+function initializeGeminiClient(apiKey) {
+  if (!apiKey) {
+    genAI = null;
+    return;
+  }
+  try {
+    genAI = new GoogleGenAI({ apiKey });
+  } catch (error) {
+    console.error('Error initializing Gemini client:', error);
+    genAI = null;
+  }
+}
+
+// AI IPC handlers
+ipcMain.handle('ai-generate-content', async (event, content, model, images = []) => {
+  if (!genAI) {
+    return { success: false, error: 'AI not configured. Please set API key in settings.' };
+  }
+
+  try {
+    const data = loadData();
+    const systemPrompt = data.aiSettings?.systemPrompt || DEFAULT_SYSTEM_PROMPT;
+    const enableSearch = data.aiSettings?.enableSearch !== false;
+    const isImageModel = model === 'models/gemini-3-pro-image-preview';
+
+    // Prepare parts for the request
+    // For image models, don't use system prompt - just send the content
+    const parts = isImageModel
+      ? [{ text: content }]
+      : [{ text: `${systemPrompt}\n\nCurrent note:\n${content}` }];
+
+    // Add images if provided
+    if (images && images.length > 0) {
+      for (const image of images) {
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType,
+            data: image.data
+          }
+        });
+      }
+    }
+
+    // Build request config
+    const requestConfig = {
+      model: model,
+      contents: [{
+        role: 'user',
+        parts: parts
+      }]
+    };
+
+    // Add special config for image model
+    if (isImageModel) {
+      requestConfig.config = {
+        responseModalities: ['IMAGE'],
+        imageConfig: {}
+      };
+      if (enableSearch) {
+        requestConfig.config.tools = [{ googleSearch: {} }];
+      }
+    } else if (enableSearch) {
+      requestConfig.config = {
+        tools: [{ googleSearch: {} }]
+      };
+    }
+
+    console.log('Request config:', JSON.stringify(requestConfig, null, 2));
+
+    // Generate content with streaming
+    const response = await genAI.models.generateContentStream(requestConfig);
+
+    // Stream response back to renderer
+    let fullText = '';
+    let imageData = null;
+
+    for await (const chunk of response) {
+      // Log chunk structure for debugging
+      console.log('Chunk received:', JSON.stringify(chunk, null, 2).substring(0, 500));
+
+      // Handle text chunks
+      const chunkText = chunk.text;
+      if (chunkText) {
+        fullText += chunkText;
+        event.sender.send('ai-content-chunk', chunkText);
+      }
+
+      // Handle image chunks
+      if (chunk.candidates?.[0]?.content?.parts) {
+        console.log('Parts found:', chunk.candidates[0].content.parts.length);
+        for (const part of chunk.candidates[0].content.parts) {
+          console.log('Part type:', part.inlineData ? 'inlineData' : 'other', Object.keys(part));
+          if (part.inlineData) {
+            const inlineData = part.inlineData;
+            const mimeType = inlineData.mimeType || 'image/png';
+            const imageBuffer = Buffer.from(inlineData.data, 'base64');
+
+            // Generate unique filename
+            const extension = mimeType.split('/')[1] || 'png';
+            const filename = `generated-${Date.now()}-${crypto.randomBytes(4).toString('hex')}.${extension}`;
+            const filePath = path.join(imagesDir, filename);
+
+            // Save image to disk
+            fs.writeFileSync(filePath, imageBuffer);
+            console.log('Image saved to:', filePath);
+
+            // Send file path to renderer
+            imageData = {
+              mimeType: mimeType,
+              filePath: filePath,
+              filename: filename
+            };
+            event.sender.send('ai-image-chunk', imageData);
+          }
+        }
+      }
+    }
+
+    console.log('Final imageData:', imageData ? 'Present' : 'NULL');
+
+    // Extract content from <result> tags for text
+    const match = fullText.match(/<result>([\s\S]*?)<\/result>/);
+    const extracted = match ? match[1].trim() : fullText;
+
+    return {
+      success: true,
+      content: extracted,
+      image: imageData
+    };
+
+  } catch (error) {
+    console.error('AI generation error:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('ai-save-settings', async (event, settings) => {
+  try {
+    const data = loadData();
+    data.aiSettings = settings;
+    saveData(data);
+
+    // Re-initialize client with new API key
+    initializeGeminiClient(settings.apiKey);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving AI settings:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('ai-get-settings', async () => {
+  try {
+    const data = loadData();
+    return data.aiSettings || null;
+  } catch (error) {
+    console.error('Error getting AI settings:', error);
+    return null;
+  }
+});
+
+// UI State persistence
+ipcMain.handle('save-ui-state', async (event, uiState) => {
+  try {
+    const data = loadData();
+    data.uiState = uiState;
+    saveData(data);
+    return { success: true };
+  } catch (error) {
+    console.error('Error saving UI state:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-ui-state', async () => {
+  try {
+    const data = loadData();
+    return data.uiState || null;
+  } catch (error) {
+    console.error('Error getting UI state:', error);
+    return null;
+  }
+});
+
 // Download/export note as markdown
 ipcMain.handle('download-markdown', async (event, content, suggestedName) => {
   const downloadsPath = app.getPath('downloads');
@@ -270,6 +468,12 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   registerShortcuts();
+
+  // Initialize AI client if API key exists
+  const data = loadData();
+  if (data.aiSettings?.apiKey) {
+    initializeGeminiClient(data.aiSettings.apiKey);
+  }
 });
 
 app.on('window-all-closed', () => {
