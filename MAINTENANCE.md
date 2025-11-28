@@ -512,9 +512,11 @@ source ~/.zshrc
 
 ### Problem: Window switches desktops instead of appearing on current one
 
-**Fix already applied**: `setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })`
+**Fix applied in `toggleWindow()` function**: The window temporarily enables `setVisibleOnAllWorkspaces(true)` when showing, then disables it after 100ms. This allows the window to:
+- Appear on whichever desktop you're currently on
+- Stay on that desktop when you switch to other desktops (doesn't follow you around)
 
-If still happening, check `app/main.js` line 65.
+See `app/main.js` around line 134.
 
 ### Problem: GitHub Actions workflow fails
 
