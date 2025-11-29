@@ -7,13 +7,14 @@ Complete guide for maintaining and developing xnote.
 ## Table of Contents
 
 1. [Codebase Structure](#codebase-structure)
-2. [Development Workflow](#development-workflow)
-3. [Release Process](#release-process)
-4. [GitHub Repository Structure](#github-repository-structure)
-5. [Homebrew Distribution](#homebrew-distribution)
-6. [CI/CD Pipeline](#cicd-pipeline)
-7. [Common Tasks](#common-tasks)
-8. [Troubleshooting](#troubleshooting)
+2. [AI Features](#ai-features)
+3. [Development Workflow](#development-workflow)
+4. [Release Process](#release-process)
+5. [GitHub Repository Structure](#github-repository-structure)
+6. [Homebrew Distribution](#homebrew-distribution)
+7. [CI/CD Pipeline](#cicd-pipeline)
+8. [Common Tasks](#common-tasks)
+9. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -73,9 +74,16 @@ xnote/
   - Dark/light theme (sepia style)
   - Modal dialogs (save, open, shortcuts)
   - Storage abstraction (works in Electron & browser)
+  - **Multi-tab support** - Open multiple notes simultaneously
+  - **AI Inline Assistant** (`Cmd+Y`) - Generate content at cursor
+  - **AI Chat Sidebar** (`Cmd+Shift+Y`) - Conversational AI with streaming
+  - **Download** - Export notes as Markdown files
+  - **Share** - Share notes via GitHub Gist
 - **Dependencies**:
   - `marked.js` - Markdown parsing
   - `highlight.js` - Code syntax highlighting
+  - `lucide` - Icon library
+  - `@google/genai` - Gemini AI SDK
 
 #### `app/package.json`
 - **Purpose**: App metadata and build configuration
@@ -115,6 +123,91 @@ xnote/
 - **Purpose**: Symlink CLI to `/usr/local/bin` for development
 - **Usage**: `./install-cli.sh` (requires sudo)
 - **Alternative**: Add `app/bin` to PATH manually
+
+---
+
+## AI Features
+
+xnote includes powerful AI capabilities powered by Google's Gemini models.
+
+### Supported Models
+
+| Model | Description | Use Case |
+|-------|-------------|----------|
+| `gemini-3-pro-preview` | Latest multimodal (default) | General use, best quality |
+| `gemini-3-pro-image-preview` | Image generation | Creating images from prompts |
+| `gemini-2.5-pro` | Advanced reasoning | Complex tasks |
+| `gemini-2.5-flash` | Fast, balanced | Quick responses |
+| `gemini-2.5-flash-lite` | Fastest, cost-efficient | Simple tasks |
+
+### Inline AI (`Cmd+Y`)
+
+- Opens floating prompt at cursor position
+- Generates content to insert at cursor
+- Uses structured XML prompt with `<FILL_HERE/>` marker
+- Returns JSON response for reliable parsing
+- Supports image paste for multimodal prompts
+
+**Modes**:
+- **Insert**: Adds content at cursor position
+- **Replace**: Replaces selected text
+
+### Chat Sidebar (`Cmd+Shift+Y`)
+
+- Full conversational AI interface
+- **Streaming responses** - See text as it generates
+- **Conversation history** - Model remembers context
+- **Multi-turn chat** - Full history sent with each request
+- **Image support** - Paste images in chat
+- **Session persistence** - Chat history saved
+
+### AI Configuration
+
+**Settings** (`Cmd+,` → AI Settings):
+- API Key (from aistudio.google.com)
+- Default Model
+- System Prompt
+- Google Search toggle
+
+**Thinking Config** (per model):
+```javascript
+// Gemini 3: thinkingLevel
+{ thinkingLevel: 'LOW' }  // or 'HIGH'
+
+// Gemini 2.5: thinkingBudget
+{ thinkingBudget: 2334 }  // tokens for thinking
+{ thinkingBudget: -1 }    // dynamic
+{ thinkingBudget: 0 }     // disabled (flash-lite)
+```
+
+### Download & Share
+
+**Download** (`Cmd+D`):
+- Exports current note as `.md` file
+- Uses native save dialog
+
+**Share via Gist** (`Cmd+Shift+G`):
+- Creates GitHub Gist from current note
+- Requires `gh` CLI to be authenticated
+- Options: Public or Private gist
+
+### Technical Implementation
+
+**Files**:
+- `app/main.js` - AI IPC handlers, Gemini SDK integration
+- `app/preload.js` - AI API exposure to renderer
+- `app/index.html` - UI components, prompt construction
+
+**Key Functions** (main.js):
+- `ai-generate-content` - Main generation endpoint
+  - `isInlineMode`: JSON response for inline AI
+  - `chatHistory`: Full conversation for chat mode
+  - Model-specific thinking config
+
+**Data Storage**:
+- AI settings: `~/.xnote/data.json` → `aiSettings`
+- Chat sessions: `~/.xnote/data.json` → `chatSessions`
+- Generated images: `~/.xnote/images/`
 
 ---
 
@@ -699,9 +792,15 @@ xnote logs -f    # Check logs
 | Data location | `~/.xnote/data.json` |
 | Logs (CLI) | `~/.xnote/xnote.log` |
 | PID file (CLI) | `~/.xnote/xnote.pid` |
+| **AI Shortcuts** | |
+| Inline AI | `Cmd+Y` |
+| Chat Sidebar | `Cmd+Shift+Y` |
+| Download Note | `Cmd+D` |
+| Share via Gist | `Cmd+Shift+G` |
+| AI Settings | `Cmd+,` |
 
 ---
 
-**Last Updated**: 2025-11-21
-**Current Version**: 1.0.1+ (with CLI support)
+**Last Updated**: 2025-11-29
+**Current Version**: 1.0.2+ (with AI features, multi-tab, streaming)
 **Maintainer**: unclecode

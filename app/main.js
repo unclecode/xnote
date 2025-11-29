@@ -230,7 +230,7 @@ function initializeGeminiClient(apiKey) {
 }
 
 // AI IPC handlers
-ipcMain.handle('ai-generate-content', async (event, content, model, images = [], chatHistory = []) => {
+ipcMain.handle('ai-generate-content', async (event, content, model, images = [], chatHistory = [], isInlineMode = false) => {
   if (!genAI) {
     return { success: false, error: 'AI not configured. Please set API key in settings.' };
   }
@@ -244,12 +244,7 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [],
     // Build contents array from chat history
     let contents = [];
 
-    // Add system instruction for non-image models
-    if (!isImageModel && systemPrompt) {
-      // System prompt goes in config, not contents
-    }
-
-    // Convert chat history to Gemini format
+    // Convert chat history to Gemini format (for chat mode)
     if (chatHistory && chatHistory.length > 0) {
       for (const msg of chatHistory) {
         const role = msg.role === 'ai' ? 'model' : 'user';
@@ -278,11 +273,9 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [],
       }
     }
 
-    // If no chat history, create single message (backward compatibility)
+    // If no chat history, create single message
     if (contents.length === 0) {
-      const parts = isImageModel
-        ? [{ text: content }]
-        : [{ text: content }];
+      const parts = [{ text: content }];
 
       // Add current images if provided
       if (images && images.length > 0) {
@@ -308,8 +301,20 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [],
     // Initialize config
     requestConfig.config = {};
 
-    // Add system instruction for non-image models
-    if (!isImageModel && systemPrompt) {
+    // For inline mode: use JSON response schema (no system prompt needed)
+    // For chat mode: use system instruction for context
+    if (isInlineMode && !isImageModel) {
+      // Inline mode: force JSON response
+      requestConfig.config.responseMimeType = 'application/json';
+      requestConfig.config.responseSchema = {
+        type: 'object',
+        properties: {
+          result: { type: 'string' }
+        },
+        required: ['result']
+      };
+    } else if (!isImageModel && systemPrompt && !isInlineMode) {
+      // Chat mode: use system instruction
       requestConfig.config.systemInstruction = systemPrompt;
     }
 
@@ -330,14 +335,40 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [],
       requestConfig.config.imageConfig = {};
     }
 
-    // Add search tool if enabled
-    if (enableSearch) {
+    // Add search tool if enabled (not for inline mode with JSON)
+    if (enableSearch && !isInlineMode) {
       requestConfig.config.tools = [{ googleSearch: {} }];
     }
 
     console.log('Request config:', JSON.stringify(requestConfig, null, 2));
 
-    // Generate content with streaming
+    // For inline mode: use non-streaming for cleaner JSON parsing
+    if (isInlineMode && !isImageModel) {
+      const response = await genAI.models.generateContent(requestConfig);
+      const fullText = response.text || '';
+
+      console.log('Inline mode response:', fullText.substring(0, 500));
+
+      // Parse JSON response
+      try {
+        const jsonResponse = JSON.parse(fullText);
+        return {
+          success: true,
+          content: jsonResponse.result || '',
+          image: null
+        };
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        // Fallback: return raw text
+        return {
+          success: true,
+          content: fullText,
+          image: null
+        };
+      }
+    }
+
+    // Chat mode: Generate content with streaming
     const response = await genAI.models.generateContentStream(requestConfig);
 
     // Stream response back to renderer
@@ -388,13 +419,9 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [],
 
     console.log('Final imageData:', imageData ? 'Present' : 'NULL');
 
-    // Extract content from <result> tags for text
-    const match = fullText.match(/<result>([\s\S]*?)<\/result>/);
-    const extracted = match ? match[1].trim() : fullText;
-
     return {
       success: true,
-      content: extracted,
+      content: fullText,
       image: imageData
     };
 

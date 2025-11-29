@@ -1956,7 +1956,7 @@ Type markdown here, preview on the right updates as you type."
           </div>
           <div class="chat-header-right">
             <select id="chat-model-selector" class="chat-model-select">
-              <option value="models/gemini-3-pro-preview">gemini-3-pro-preview</option>
+              <option value="models/gemini-3-pro-preview" selected>gemini-3-pro-preview</option>
               <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
               <option value="models/gemini-2.5-pro">gemini-2.5-pro</option>
               <option value="models/gemini-2.5-flash">gemini-2.5-flash</option>
@@ -2176,7 +2176,7 @@ Type markdown here, preview on the right updates as you type."
           <div class="setting-group">
             <label for="ai-model-select">Default Model</label>
             <select id="ai-model-select" class="setting-select">
-              <option value="models/gemini-3-pro-preview">gemini-3-pro-preview (Default)</option>
+              <option value="models/gemini-3-pro-preview" selected>gemini-3-pro-preview (Default)</option>
               <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
               <option value="models/gemini-2.5-pro">gemini-2.5-pro</option>
               <option value="models/gemini-2.5-flash">gemini-2.5-flash</option>
@@ -2211,11 +2211,11 @@ Type markdown here, preview on the right updates as you type."
     <div id="ai-floating-input" class="ai-floating-input">
       <div class="ai-input-header">
         <select id="ai-model-selector" class="ai-model-selector">
-          <option value="models/gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
-          <option value="models/gemini-exp-1206">gemini-exp-1206</option>
-          <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
-          <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+          <option value="models/gemini-3-pro-preview" selected>gemini-3-pro-preview</option>
           <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+          <option value="models/gemini-2.5-pro">gemini-2.5-pro</option>
+          <option value="models/gemini-2.5-flash">gemini-2.5-flash</option>
+          <option value="models/gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
         </select>
         <div class="ai-mode-toggle-wrapper">
           <button class="ai-mode-btn" data-mode="replace" id="ai-mode-replace">Replace</button>
@@ -3145,11 +3145,11 @@ Type markdown here, preview on the right updates as you type."
       const DEFAULT_AI_SYSTEM_PROMPT = `You are an AI assistant helping to draft and refine notes. Return ONLY the requested content wrapped in <result></result> XML tags. No explanations, greetings, or commentary. Just the content.`;
 
       const AI_MODELS = [
-        'models/gemini-2.0-flash-exp',
-        'models/gemini-exp-1206',
-        'models/gemini-2.0-flash-thinking-exp-1219',
-        'models/gemini-1.5-pro-latest',
-        'models/gemini-3-pro-image-preview'
+        'models/gemini-3-pro-preview',
+        'models/gemini-3-pro-image-preview',
+        'models/gemini-2.5-pro',
+        'models/gemini-2.5-flash',
+        'models/gemini-2.5-flash-lite'
       ];
 
       // AI State
@@ -3231,6 +3231,11 @@ Type markdown here, preview on the right updates as you type."
             systemPrompt: DEFAULT_AI_SYSTEM_PROMPT,
             enableSearch: true
           };
+        }
+
+        // Validate saved model - fall back to default if not in valid list
+        if (!AI_MODELS.includes(aiSettings.defaultModel)) {
+          aiSettings.defaultModel = AI_MODELS[0];
         }
       }
 
@@ -3555,26 +3560,64 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
-        // Get current note content or use selected text
+        // Get current note content and build structured prompt
         const currentMode = await storage.get(KEY_MODE) || 'rich';
-        let contentToSend = '';
+        let fullPrompt = '';
 
-        // Phase 1.5: Use selected text if available, otherwise use full note
+        // Build structured XML prompt with cursor marker
         if (aiSelectedText) {
-          contentToSend = aiSelectedText;
-        } else {
-          // Original Phase 1 behavior: use full note
-          if (currentMode === 'rich') {
-            contentToSend = rich.innerText.trim();
-          } else {
-            contentToSend = mdInput.value.trim();
-          }
-        }
+          // If text is selected, use it as context with FILL_HERE at end
+          fullPrompt = `<current_note>
+<selected_text>${aiSelectedText}</selected_text>
+<FILL_HERE/>
+</current_note>
 
-        // Combine content with user prompt
-        const fullPrompt = contentToSend
-          ? `${contentToSend}\n\n${userPrompt}`
-          : userPrompt;
+<user_query>
+${userPrompt}
+</user_query>
+
+<task>
+Based on the selected text, answer the user's query. Generate ONLY the content to insert at the <FILL_HERE/> marker. Do not include the original text.
+</task>`;
+        } else {
+          // Get full note content with cursor position
+          let beforeCursor = '';
+          let afterCursor = '';
+
+          if (currentMode === 'rich') {
+            // Rich mode: use saved cursor range
+            const fullText = rich.innerText;
+            if (savedCursorRange) {
+              // Get text before and after cursor
+              const preRange = document.createRange();
+              preRange.setStart(rich, 0);
+              preRange.setEnd(savedCursorRange.startContainer, savedCursorRange.startOffset);
+              beforeCursor = preRange.toString();
+              afterCursor = fullText.substring(beforeCursor.length);
+            } else {
+              beforeCursor = fullText;
+              afterCursor = '';
+            }
+          } else {
+            // Markdown mode: use saved cursor position
+            const fullText = mdInput.value;
+            const cursorPos = savedCursorPosition !== null ? savedCursorPosition : fullText.length;
+            beforeCursor = fullText.substring(0, cursorPos);
+            afterCursor = fullText.substring(cursorPos);
+          }
+
+          fullPrompt = `<current_note>
+${beforeCursor}<FILL_HERE/>${afterCursor}
+</current_note>
+
+<user_query>
+${userPrompt}
+</user_query>
+
+<task>
+Answer the user's query. Generate ONLY the content to insert at the <FILL_HERE/> marker. Do not repeat or include any existing content from the note.
+</task>`;
+        }
 
         isAIGenerating = true;
         aiGenerationAborted = false;
@@ -3620,7 +3663,9 @@ Type markdown here, preview on the right updates as you type."
           const result = await window.electronAPI.generateContent(
             prompt,
             selectedModel,
-            aiImages
+            aiImages,
+            [],    // no chat history for inline mode
+            true   // isInlineMode = true
           );
 
           // Check if aborted after API call
@@ -3940,7 +3985,7 @@ Type markdown here, preview on the right updates as you type."
           scroll: {
             rich: rich.scrollTop,
             markdown: mdInput.scrollTop,
-            chat: chatMessagesDiv.scrollTop
+            chat: chatMessagesContainer.scrollTop
           },
           cursor: {
             markdown: {
@@ -3949,7 +3994,7 @@ Type markdown here, preview on the right updates as you type."
             }
           },
           chat: {
-            includeNote: chatIncludeNoteCheckbox?.checked || false
+            includeNote: chatIncludeNote?.checked || false
           }
         };
 
@@ -3967,10 +4012,18 @@ Type markdown here, preview on the right updates as you type."
           const state = await window.electronAPI.getUIState();
           if (!state) return;
 
-          // Restore models
+          // Restore models (validate against current model list)
           if (state.models) {
-            if (state.models.floating) aiModelSelector.value = state.models.floating;
-            if (state.models.chat) chatModelSelector.value = state.models.chat;
+            if (state.models.floating && AI_MODELS.includes(state.models.floating)) {
+              aiModelSelector.value = state.models.floating;
+            } else {
+              aiModelSelector.value = AI_MODELS[0];
+            }
+            if (state.models.chat && AI_MODELS.includes(state.models.chat)) {
+              chatModelSelector.value = state.models.chat;
+            } else {
+              chatModelSelector.value = AI_MODELS[0];
+            }
           }
 
           // Restore modes
@@ -4004,7 +4057,7 @@ Type markdown here, preview on the right updates as you type."
             if (state.scroll) {
               if (state.scroll.rich) rich.scrollTop = state.scroll.rich;
               if (state.scroll.markdown) mdInput.scrollTop = state.scroll.markdown;
-              if (state.scroll.chat) chatMessagesDiv.scrollTop = state.scroll.chat;
+              if (state.scroll.chat) chatMessagesContainer.scrollTop = state.scroll.chat;
             }
 
             // Restore cursor position
@@ -4015,8 +4068,8 @@ Type markdown here, preview on the right updates as you type."
           }, 100);
 
           // Restore chat settings
-          if (state.chat?.includeNote && chatIncludeNoteCheckbox) {
-            chatIncludeNoteCheckbox.checked = true;
+          if (state.chat?.includeNote && chatIncludeNote) {
+            chatIncludeNote.checked = true;
           }
 
         } catch (err) {
@@ -4302,7 +4355,11 @@ Type markdown here, preview on the right updates as you type."
           if (session) {
             currentChatSession = session;
             chatMessages = session.messages || [];
-            chatModelSelector.value = session.model || aiSettings.defaultModel;
+            // Validate session model against current model list
+            const sessionModel = session.model && AI_MODELS.includes(session.model)
+              ? session.model
+              : aiSettings.defaultModel;
+            chatModelSelector.value = sessionModel;
             renderChatMessages();
             chatHistoryPanel.classList.remove('visible');
           }
@@ -4382,6 +4439,19 @@ Type markdown here, preview on the right updates as you type."
           // Reset received image
           receivedGeneratedImage = null;
 
+          // Set up streaming: listen for chunks
+          let streamingMsgIndex = aiMsgIndex;
+          window.electronAPI.onContentChunk((chunk) => {
+            if (!isChatGenerating || streamingMsgIndex !== aiMsgIndex) return;
+            // Append chunk to message content
+            if (!chatMessages[streamingMsgIndex].content) {
+              chatMessages[streamingMsgIndex].content = '';
+            }
+            chatMessages[streamingMsgIndex].content += chunk;
+            chatMessages[streamingMsgIndex].thinking = false;
+            debounceRenderStream(streamingMsgIndex);
+          });
+
           // Build chat history for API (exclude AI placeholder at end)
           // For the last user message, use fullMessage (with context) instead of raw userMessage
           const chatHistoryForAPI = chatMessages.slice(0, -1).map((msg, idx, arr) => {
@@ -4424,11 +4494,11 @@ Type markdown here, preview on the right updates as you type."
               chatMessages[aiMsgIndex].content = '';
               chatMessages[aiMsgIndex].image = finalImage;
               console.log('Chat: Using image:', finalImage);
-            } else {
-              // No image, show text
-              chatMessages[aiMsgIndex].content = result.content;
-              console.log('Chat: No image found, using text');
             }
+            // For text: streaming already populated content, just ensure it's set
+            // (result.content is the extracted <result> content, streaming has raw)
+
+            // Final render with actions
             renderChatMessages();
             saveChatSession();
           } else {
@@ -4542,6 +4612,63 @@ Type markdown here, preview on the right updates as you type."
         if (typeof lucide !== 'undefined') {
           lucide.createIcons();
         }
+      }
+
+      // Streaming: debounced render for single message
+      let streamRenderTimer = null;
+      function debounceRenderStream(msgIndex) {
+        if (streamRenderTimer) clearTimeout(streamRenderTimer);
+        streamRenderTimer = setTimeout(() => {
+          updateStreamingMessage(msgIndex);
+        }, 50);
+      }
+
+      // Update only the streaming AI message (efficient, no full re-render)
+      function updateStreamingMessage(msgIndex) {
+        const msg = chatMessages[msgIndex];
+        if (!msg) return;
+
+        // Find message div by data-index
+        let messageDiv = chatMessagesContainer.querySelector(`[data-msg-index="${msgIndex}"]`);
+
+        if (!messageDiv) {
+          // Create if doesn't exist
+          messageDiv = document.createElement('div');
+          messageDiv.className = `chat-message ${msg.role}`;
+          messageDiv.setAttribute('data-msg-index', msgIndex);
+
+          const headerDiv = document.createElement('div');
+          headerDiv.className = 'chat-message-header';
+          headerDiv.innerHTML = `
+            <i data-lucide="bot" width="12" height="12"></i>
+            <span>AI</span>
+          `;
+          messageDiv.appendChild(headerDiv);
+
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'chat-message-content';
+          messageDiv.appendChild(contentDiv);
+
+          chatMessagesContainer.appendChild(messageDiv);
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        const contentDiv = messageDiv.querySelector('.chat-message-content');
+        if (contentDiv && msg.content) {
+          try {
+            contentDiv.innerHTML = marked.parse(msg.content);
+            contentDiv.querySelectorAll('pre code').forEach((block) => {
+              if (typeof hljs !== 'undefined') {
+                hljs.highlightElement(block);
+              }
+            });
+          } catch (e) {
+            contentDiv.textContent = msg.content;
+          }
+        }
+
+        // Auto-scroll to bottom
+        chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
       }
 
       // Copy chat message
