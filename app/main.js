@@ -230,7 +230,7 @@ function initializeGeminiClient(apiKey) {
 }
 
 // AI IPC handlers
-ipcMain.handle('ai-generate-content', async (event, content, model, images = []) => {
+ipcMain.handle('ai-generate-content', async (event, content, model, images = [], chatHistory = []) => {
   if (!genAI) {
     return { success: false, error: 'AI not configured. Please set API key in settings.' };
   }
@@ -241,46 +241,98 @@ ipcMain.handle('ai-generate-content', async (event, content, model, images = [])
     const enableSearch = data.aiSettings?.enableSearch !== false;
     const isImageModel = model === 'models/gemini-3-pro-image-preview';
 
-    // Prepare parts for the request
-    // For image models, don't use system prompt - just send the content
-    const parts = isImageModel
-      ? [{ text: content }]
-      : [{ text: `${systemPrompt}\n\nCurrent note:\n${content}` }];
+    // Build contents array from chat history
+    let contents = [];
 
-    // Add images if provided
-    if (images && images.length > 0) {
-      for (const image of images) {
-        parts.push({
-          inlineData: {
-            mimeType: image.mimeType,
-            data: image.data
+    // Add system instruction for non-image models
+    if (!isImageModel && systemPrompt) {
+      // System prompt goes in config, not contents
+    }
+
+    // Convert chat history to Gemini format
+    if (chatHistory && chatHistory.length > 0) {
+      for (const msg of chatHistory) {
+        const role = msg.role === 'ai' ? 'model' : 'user';
+        const parts = [];
+
+        // Add text content
+        if (msg.content) {
+          parts.push({ text: msg.content });
+        }
+
+        // Add images if present in message
+        if (msg.images && msg.images.length > 0) {
+          for (const img of msg.images) {
+            parts.push({
+              inlineData: {
+                mimeType: img.mimeType,
+                data: img.data
+              }
+            });
           }
-        });
+        }
+
+        if (parts.length > 0) {
+          contents.push({ role, parts });
+        }
       }
+    }
+
+    // If no chat history, create single message (backward compatibility)
+    if (contents.length === 0) {
+      const parts = isImageModel
+        ? [{ text: content }]
+        : [{ text: content }];
+
+      // Add current images if provided
+      if (images && images.length > 0) {
+        for (const image of images) {
+          parts.push({
+            inlineData: {
+              mimeType: image.mimeType,
+              data: image.data
+            }
+          });
+        }
+      }
+
+      contents.push({ role: 'user', parts });
     }
 
     // Build request config
     const requestConfig = {
       model: model,
-      contents: [{
-        role: 'user',
-        parts: parts
-      }]
+      contents: contents
     };
+
+    // Initialize config
+    requestConfig.config = {};
+
+    // Add system instruction for non-image models
+    if (!isImageModel && systemPrompt) {
+      requestConfig.config.systemInstruction = systemPrompt;
+    }
+
+    // Add thinking config based on model
+    if (model.includes('gemini-3')) {
+      requestConfig.config.thinkingConfig = { thinkingLevel: 'LOW' };
+    } else if (model.includes('gemini-2.5-flash-lite')) {
+      requestConfig.config.thinkingConfig = { thinkingBudget: 0 };
+    } else if (model.includes('gemini-2.5-flash')) {
+      requestConfig.config.thinkingConfig = { thinkingBudget: -1 };
+    } else if (model.includes('gemini-2.5-pro')) {
+      requestConfig.config.thinkingConfig = { thinkingBudget: 2334 };
+    }
 
     // Add special config for image model
     if (isImageModel) {
-      requestConfig.config = {
-        responseModalities: ['IMAGE'],
-        imageConfig: {}
-      };
-      if (enableSearch) {
-        requestConfig.config.tools = [{ googleSearch: {} }];
-      }
-    } else if (enableSearch) {
-      requestConfig.config = {
-        tools: [{ googleSearch: {} }]
-      };
+      requestConfig.config.responseModalities = ['IMAGE'];
+      requestConfig.config.imageConfig = {};
+    }
+
+    // Add search tool if enabled
+    if (enableSearch) {
+      requestConfig.config.tools = [{ googleSearch: {} }];
     }
 
     console.log('Request config:', JSON.stringify(requestConfig, null, 2));

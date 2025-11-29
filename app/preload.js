@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   quitApp: () => ipcRenderer.send('app-quit'),
 
   // AI APIs
-  generateContent: (content, model, images) => ipcRenderer.invoke('ai-generate-content', content, model, images),
+  generateContent: (content, model, images, chatHistory) => ipcRenderer.invoke('ai-generate-content', content, model, images, chatHistory),
   saveAISettings: (settings) => ipcRenderer.invoke('ai-save-settings', settings),
   getAISettings: () => ipcRenderer.invoke('ai-get-settings'),
   onContentChunk: (callback) => ipcRenderer.on('ai-content-chunk', (_, chunk) => callback(chunk)),

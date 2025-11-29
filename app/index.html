@@ -1956,11 +1956,11 @@ Type markdown here, preview on the right updates as you type."
           </div>
           <div class="chat-header-right">
             <select id="chat-model-selector" class="chat-model-select">
-              <option value="models/gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
-              <option value="models/gemini-exp-1206">gemini-exp-1206</option>
-              <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
-              <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+              <option value="models/gemini-3-pro-preview">gemini-3-pro-preview</option>
               <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+              <option value="models/gemini-2.5-pro">gemini-2.5-pro</option>
+              <option value="models/gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="models/gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
             </select>
             <button class="chat-icon-btn" id="chat-close-btn" title="Close Chat">
               <i data-lucide="x" width="16" height="16"></i>
@@ -2176,11 +2176,11 @@ Type markdown here, preview on the right updates as you type."
           <div class="setting-group">
             <label for="ai-model-select">Default Model</label>
             <select id="ai-model-select" class="setting-select">
-              <option value="models/gemini-2.0-flash-exp">gemini-2.0-flash-exp (Default)</option>
-              <option value="models/gemini-exp-1206">gemini-exp-1206</option>
-              <option value="models/gemini-2.0-flash-thinking-exp-1219">gemini-2.0-flash-thinking</option>
-              <option value="models/gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+              <option value="models/gemini-3-pro-preview">gemini-3-pro-preview (Default)</option>
               <option value="models/gemini-3-pro-image-preview">gemini-3-pro-image-preview</option>
+              <option value="models/gemini-2.5-pro">gemini-2.5-pro</option>
+              <option value="models/gemini-2.5-flash">gemini-2.5-flash</option>
+              <option value="models/gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
             </select>
           </div>
           <div class="setting-group">
@@ -2427,16 +2427,14 @@ Type markdown here, preview on the right updates as you type."
         if (persist) storage.set(KEY_MODE, mode);
       }
 
-      function saveRich() {
-        const html = rich.innerHTML;
-        storage.set(KEY_RICH, html);
-        rich.dataset.hasContent = html.trim().length > 0;
+      async function saveRich() {
+        rich.dataset.hasContent = rich.innerHTML.trim().length > 0;
+        await saveCurrentTabContent();
         setStatusSaved();
       }
 
-      function saveMarkdown() {
-        const text = mdInput.value;
-        storage.set(KEY_MD, text);
+      async function saveMarkdown() {
+        await saveCurrentTabContent();
         setStatusSaved();
       }
 
@@ -4349,10 +4347,11 @@ Type markdown here, preview on the right updates as you type."
           fullMessage = `${contextParts.join('\n\n---\n\n')}\n\n---\n\nQuestion: ${userMessage}`;
         }
 
-        // Add user message to chat
+        // Add user message to chat (store images for history)
         const userMsg = {
           role: 'user',
           content: userMessage,
+          images: chatImages.length > 0 ? [...chatImages] : undefined,
           timestamp: new Date().toISOString()
         };
         chatMessages.push(userMsg);
@@ -4383,10 +4382,21 @@ Type markdown here, preview on the right updates as you type."
           // Reset received image
           receivedGeneratedImage = null;
 
+          // Build chat history for API (exclude AI placeholder at end)
+          // For the last user message, use fullMessage (with context) instead of raw userMessage
+          const chatHistoryForAPI = chatMessages.slice(0, -1).map((msg, idx, arr) => {
+            if (idx === arr.length - 1 && msg.role === 'user') {
+              // Last user message - use full context
+              return { ...msg, content: fullMessage };
+            }
+            return msg;
+          });
+
           const result = await window.electronAPI.generateContent(
             fullMessage,
             model,
-            chatImages
+            chatImages,
+            chatHistoryForAPI
           );
 
           // For image models, wait for the image chunk to arrive via IPC
