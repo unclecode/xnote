@@ -2122,23 +2122,52 @@ Type markdown here, preview on the right updates as you type."
 
     <!-- Share Modal -->
     <div class="modal-overlay" id="share-modal">
-      <div class="modal" style="max-width: 360px;">
+      <div class="modal" style="max-width: 380px;">
         <div class="modal-header">
           <div class="modal-title">Share Note</div>
           <button class="modal-close" id="share-modal-close">&times;</button>
         </div>
         <div class="modal-body">
           <div class="confirm-text" id="share-status">Choose visibility for your shared note:</div>
+
+          <!-- New gist options (no existing gist) -->
           <div class="confirm-actions" id="share-options">
             <button class="btn" id="share-secret-btn">Secret</button>
             <button class="btn btn-primary" id="share-public-btn">Public</button>
           </div>
-          <div class="hidden" id="share-result">
+
+          <!-- Existing gist: unchanged (up to date) -->
+          <div class="hidden" id="share-synced">
             <input type="text" class="save-input" id="share-url" readonly style="margin-bottom: 8px;" />
             <div class="confirm-actions">
               <button class="btn btn-primary" id="copy-url-btn">Copy URL</button>
+              <button class="btn" id="open-gist-btn">Open</button>
             </div>
           </div>
+
+          <!-- Existing gist: content changed -->
+          <div class="hidden" id="share-changed">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+              Content has changed since last share.
+            </p>
+            <div class="confirm-actions">
+              <button class="btn btn-primary" id="update-gist-btn">Update Gist</button>
+              <button class="btn" id="view-current-btn">View Current</button>
+            </div>
+          </div>
+
+          <!-- Result after create/update -->
+          <div class="hidden" id="share-result">
+            <input type="text" class="save-input" id="share-result-url" readonly style="margin-bottom: 8px;" />
+            <div class="confirm-actions">
+              <button class="btn btn-primary" id="copy-result-btn">Copy URL</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer with unlink (only when gist exists) -->
+        <div class="modal-footer hidden" id="share-footer">
+          <button class="btn btn-danger" id="unlink-gist-btn">Unlink Gist</button>
         </div>
       </div>
     </div>
@@ -2474,10 +2503,12 @@ Type markdown here, preview on the right updates as you type."
       });
 
 
-      modeToggle.addEventListener("click", (event) => {
+      modeToggle.addEventListener("click", async (event) => {
         const btn = event.target.closest("button[data-mode]");
         if (!btn) return;
         applyMode(btn.dataset.mode);
+        // Save mode to current tab
+        await saveCurrentTabContent();
       });
 
       // Notes management functions
@@ -2541,6 +2572,15 @@ Type markdown here, preview on the right updates as you type."
           mdInput.value = tab.tempMd || "";
           updateMarkdownPreview();
         }
+
+        // Apply tab's saved mode (default to "rich" if not set)
+        const tabMode = tab.mode || "rich";
+        applyMode(tabMode, false); // Don't persist to global storage
+      }
+
+      // Get current editor mode
+      function getCurrentMode() {
+        return rich.classList.contains("hidden") ? "md" : "rich";
       }
 
       async function saveCurrentTabContent() {
@@ -2550,9 +2590,14 @@ Type markdown here, preview on the right updates as you type."
 
         const tab = tabs[activeIndex];
 
+        // Save current mode to tab
+        tab.mode = getCurrentMode();
+
         if (tab.noteName) {
           // Save to KEY_NOTES using existing function
           await saveNoteWithName(tab.noteName);
+          // Also persist mode to tabs
+          await setOpenTabs(tabs);
         } else {
           // Save to tab's temp storage
           tab.tempRich = rich.innerHTML;
@@ -2584,8 +2629,11 @@ Type markdown here, preview on the right updates as you type."
       async function createNewTab() {
         await saveCurrentTabContent();
 
+        // New tab inherits current mode
+        const currentMode = getCurrentMode();
+
         const tabs = await getOpenTabs();
-        tabs.push({ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "" });
+        tabs.push({ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "", mode: currentMode });
         await setOpenTabs(tabs);
 
         // Load the new tab
@@ -2641,8 +2689,11 @@ Type markdown here, preview on the right updates as you type."
           return;
         }
 
+        // New tab inherits current mode
+        const currentMode = getCurrentMode();
+
         // Add new tab
-        tabs.push({ noteName });
+        tabs.push({ noteName, mode: currentMode });
         await setOpenTabs(tabs);
 
         // Switch to it
@@ -2940,32 +2991,128 @@ Type markdown here, preview on the right updates as you type."
         return content;
       }
 
-      function resetShareModal() {
-        document.getElementById("share-status").textContent = "Choose visibility for your shared note:";
-        document.getElementById("share-options").classList.remove("hidden");
-        document.getElementById("share-result").classList.add("hidden");
-        document.getElementById("share-url").value = "";
+      // Simple content hash for change detection
+      function computeContentHash(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          const char = str.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash;
+        }
+        return hash.toString(16);
       }
 
-      async function shareNote(isPublic) {
-        const content = getShareContent();
-        if (!content.trim()) {
-          await showConfirm("Nothing to share. The note is empty.", "Share");
+      // Get current note's gist metadata
+      async function getCurrentNoteGist() {
+        if (!currentNoteName) return null;
+        const notes = await getNotes();
+        const note = notes.find(n => n.name === currentNoteName);
+        return note?.gist || null;
+      }
+
+      // Save gist metadata to current note
+      async function saveNoteGist(gistData) {
+        if (!currentNoteName) return;
+        const notes = await getNotes();
+        const noteIndex = notes.findIndex(n => n.name === currentNoteName);
+        if (noteIndex >= 0) {
+          notes[noteIndex].gist = gistData;
+          await saveNotes(notes);
+        }
+      }
+
+      // Clear gist metadata from current note
+      async function clearNoteGist() {
+        if (!currentNoteName) return;
+        const notes = await getNotes();
+        const noteIndex = notes.findIndex(n => n.name === currentNoteName);
+        if (noteIndex >= 0) {
+          delete notes[noteIndex].gist;
+          await saveNotes(notes);
+        }
+      }
+
+      // Hide all share modal state containers
+      function hideAllShareStates() {
+        document.getElementById("share-options").classList.add("hidden");
+        document.getElementById("share-synced").classList.add("hidden");
+        document.getElementById("share-changed").classList.add("hidden");
+        document.getElementById("share-result").classList.add("hidden");
+        document.getElementById("share-footer").classList.add("hidden");
+      }
+
+      // Open share modal with correct state
+      async function openShareModal() {
+        if (!isElectron) {
+          showConfirm("Share is only available in the desktop app.", "Share");
           return;
         }
 
-        const filename = currentNoteName
-          ? currentNoteName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md'
-          : 'note.md';
+        // Require saved note
+        if (!currentNoteName) {
+          const shouldSave = await showConfirm(
+            "Please save your note before sharing.",
+            "Save Required"
+          );
+          if (shouldSave) {
+            openModal(saveModal);
+            document.getElementById("save-name").focus();
+          }
+          return;
+        }
+
+        const content = getShareContent();
+        if (!content.trim()) {
+          showConfirm("Nothing to share. The note is empty.", "Share");
+          return;
+        }
+
+        const gist = await getCurrentNoteGist();
+        const currentHash = computeContentHash(content);
+
+        hideAllShareStates();
+
+        if (!gist) {
+          // No existing gist - show create options
+          document.getElementById("share-status").textContent = "Choose visibility for your shared note:";
+          document.getElementById("share-options").classList.remove("hidden");
+        } else if (gist.contentHash === currentHash) {
+          // Gist exists, content unchanged - show URL
+          document.getElementById("share-status").textContent = "Your note is shared and up to date.";
+          document.getElementById("share-url").value = gist.url;
+          document.getElementById("share-synced").classList.remove("hidden");
+          document.getElementById("share-footer").classList.remove("hidden");
+        } else {
+          // Gist exists, content changed - show update option
+          document.getElementById("share-status").textContent = "Gist needs update";
+          document.getElementById("share-changed").classList.remove("hidden");
+          document.getElementById("share-footer").classList.remove("hidden");
+        }
+
+        openModal(shareModal);
+      }
+
+      // Create new gist
+      async function createGist(isPublic) {
+        const content = getShareContent();
+        const filename = currentNoteName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
 
         document.getElementById("share-status").textContent = "Creating gist...";
-        document.getElementById("share-options").classList.add("hidden");
+        hideAllShareStates();
 
-        const result = await window.electronAPI.shareGist(content, filename, isPublic);
+        const result = await window.electronAPI.shareGist(content, filename, isPublic, null);
 
         if (result.success) {
+          // Save gist metadata to note
+          await saveNoteGist({
+            id: result.gistId,
+            url: result.url,
+            contentHash: computeContentHash(content),
+            isPublic: isPublic
+          });
+
           document.getElementById("share-status").textContent = isPublic ? "Public gist created!" : "Secret gist created!";
-          document.getElementById("share-url").value = result.url;
+          document.getElementById("share-result-url").value = result.url;
           document.getElementById("share-result").classList.remove("hidden");
         } else {
           document.getElementById("share-status").textContent = "Error: " + result.error;
@@ -2973,23 +3120,73 @@ Type markdown here, preview on the right updates as you type."
         }
       }
 
-      shareBtn.addEventListener("click", () => {
-        if (!isElectron) {
-          showConfirm("Share is only available in the desktop app.", "Share");
-          return;
-        }
-        const content = getShareContent();
-        if (!content.trim()) {
-          showConfirm("Nothing to share. The note is empty.", "Share");
-          return;
-        }
-        resetShareModal();
-        openModal(shareModal);
-      });
+      // Update existing gist
+      async function updateGist() {
+        const gist = await getCurrentNoteGist();
+        if (!gist) return;
 
+        const content = getShareContent();
+        const filename = currentNoteName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.md';
+
+        document.getElementById("share-status").textContent = "Updating gist...";
+        hideAllShareStates();
+
+        const result = await window.electronAPI.shareGist(content, filename, gist.isPublic, gist.id);
+
+        if (result.success) {
+          // Update hash in metadata
+          await saveNoteGist({
+            ...gist,
+            contentHash: computeContentHash(content)
+          });
+
+          document.getElementById("share-status").textContent = "Gist updated!";
+          document.getElementById("share-result-url").value = gist.url;
+          document.getElementById("share-result").classList.remove("hidden");
+        } else if (result.notFound) {
+          // Gist was deleted externally
+          document.getElementById("share-status").textContent = "Gist was deleted externally. Create a new one?";
+          document.getElementById("share-options").classList.remove("hidden");
+          await clearNoteGist();
+        } else {
+          document.getElementById("share-status").textContent = "Error: " + result.error;
+          document.getElementById("share-changed").classList.remove("hidden");
+          document.getElementById("share-footer").classList.remove("hidden");
+        }
+      }
+
+      // Unlink gist (with optional delete)
+      async function unlinkGist() {
+        const gist = await getCurrentNoteGist();
+        if (!gist) return;
+
+        const deleteFromGitHub = await showConfirm(
+          "Also delete this gist from GitHub?",
+          "Unlink Gist"
+        );
+
+        if (deleteFromGitHub) {
+          document.getElementById("share-status").textContent = "Deleting gist...";
+          hideAllShareStates();
+          await window.electronAPI.deleteGist(gist.id);
+        }
+
+        await clearNoteGist();
+        closeModal(shareModal);
+        showConfirm(deleteFromGitHub ? "Gist deleted and unlinked." : "Gist unlinked.", "Done");
+      }
+
+      // Share button click handler
+      shareBtn.addEventListener("click", openShareModal);
+
+      // Modal close
       document.getElementById("share-modal-close").addEventListener("click", () => closeModal(shareModal));
-      document.getElementById("share-secret-btn").addEventListener("click", () => shareNote(false));
-      document.getElementById("share-public-btn").addEventListener("click", () => shareNote(true));
+
+      // Create gist buttons
+      document.getElementById("share-secret-btn").addEventListener("click", () => createGist(false));
+      document.getElementById("share-public-btn").addEventListener("click", () => createGist(true));
+
+      // Copy URL button (synced state)
       document.getElementById("copy-url-btn").addEventListener("click", () => {
         const urlInput = document.getElementById("share-url");
         urlInput.select();
@@ -2999,6 +3196,35 @@ Type markdown here, preview on the right updates as you type."
           document.getElementById("copy-url-btn").textContent = "Copy URL";
         }, 1500);
       });
+
+      // Copy URL button (result state)
+      document.getElementById("copy-result-btn").addEventListener("click", () => {
+        const urlInput = document.getElementById("share-result-url");
+        urlInput.select();
+        document.execCommand("copy");
+        document.getElementById("copy-result-btn").textContent = "Copied!";
+        setTimeout(() => {
+          document.getElementById("copy-result-btn").textContent = "Copy URL";
+        }, 1500);
+      });
+
+      // Open in browser button
+      document.getElementById("open-gist-btn").addEventListener("click", () => {
+        const url = document.getElementById("share-url").value;
+        if (url) window.open(url, '_blank');
+      });
+
+      // View current gist button
+      document.getElementById("view-current-btn").addEventListener("click", async () => {
+        const gist = await getCurrentNoteGist();
+        if (gist?.url) window.open(gist.url, '_blank');
+      });
+
+      // Update gist button
+      document.getElementById("update-gist-btn").addEventListener("click", updateGist);
+
+      // Unlink gist button
+      document.getElementById("unlink-gist-btn").addEventListener("click", unlinkGist);
 
       // Confirm modal handlers
       document.getElementById("confirm-modal-close").addEventListener("click", () => {

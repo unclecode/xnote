@@ -507,8 +507,8 @@ ipcMain.handle('download-markdown', async (event, content, suggestedName) => {
   }
 });
 
-// Share note as GitHub Gist
-ipcMain.handle('share-gist', async (event, content, filename, isPublic) => {
+// Share note as GitHub Gist (create or update)
+ipcMain.handle('share-gist', async (event, content, filename, isPublic, existingGistId) => {
   const { execSync } = require('child_process');
   const tmpFile = path.join(os.tmpdir(), filename || 'note.md');
 
@@ -516,24 +516,63 @@ ipcMain.handle('share-gist', async (event, content, filename, isPublic) => {
     // Write content to temp file
     fs.writeFileSync(tmpFile, content, 'utf8');
 
-    // Create gist using gh CLI
-    const visibility = isPublic ? '--public' : '';
-    const cmd = `gh gist create ${visibility} "${tmpFile}" 2>&1`;
-    const output = execSync(cmd, { encoding: 'utf8', timeout: 30000 });
+    let cmd, output;
 
-    // Extract URL from output
-    const urlMatch = output.match(/https:\/\/gist\.github\.com\/[^\s]+/);
-    if (urlMatch) {
-      return { success: true, url: urlMatch[0] };
+    if (existingGistId) {
+      // UPDATE existing gist
+      cmd = `gh gist edit ${existingGistId} "${tmpFile}" 2>&1`;
+      execSync(cmd, { encoding: 'utf8', timeout: 30000 });
+      return {
+        success: true,
+        gistId: existingGistId,
+        url: `https://gist.github.com/${existingGistId}`
+      };
+    } else {
+      // CREATE new gist
+      const visibility = isPublic ? '--public' : '';
+      cmd = `gh gist create ${visibility} "${tmpFile}" 2>&1`;
+      output = execSync(cmd, { encoding: 'utf8', timeout: 30000 });
+
+      // Extract URL from output
+      const urlMatch = output.match(/https:\/\/gist\.github\.com\/[^\s]+/);
+      if (urlMatch) {
+        const url = urlMatch[0];
+        const gistId = url.split('/').pop();
+        return { success: true, url, gistId };
+      }
+
+      return { success: false, error: 'Could not get gist URL' };
     }
-
-    return { success: false, error: 'Could not get gist URL' };
   } catch (err) {
-    console.error('Error creating gist:', err);
+    console.error('Error with gist:', err);
+    // Handle gist-not-found (deleted externally)
+    const errMsg = err.message || err.stderr?.toString() || '';
+    if (errMsg.includes('not found') || errMsg.includes('404') || errMsg.includes('could not find')) {
+      return { success: false, error: 'Gist not found', notFound: true };
+    }
     return { success: false, error: err.message };
   } finally {
     // Clean up temp file
     try { fs.unlinkSync(tmpFile); } catch {}
+  }
+});
+
+// Delete a GitHub Gist
+ipcMain.handle('delete-gist', async (event, gistId) => {
+  const { execSync } = require('child_process');
+
+  try {
+    const cmd = `gh gist delete ${gistId} --yes 2>&1`;
+    execSync(cmd, { encoding: 'utf8', timeout: 30000 });
+    return { success: true };
+  } catch (err) {
+    const errMsg = err.message || err.stderr?.toString() || '';
+    // If already deleted, treat as success
+    if (errMsg.includes('not found') || errMsg.includes('404')) {
+      return { success: true };
+    }
+    console.error('Error deleting gist:', err);
+    return { success: false, error: err.message };
   }
 });
 

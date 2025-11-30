@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Download/export
   downloadMarkdown: (content, suggestedName) => ipcRenderer.invoke('download-markdown', content, suggestedName),
 
-  // Share via Gist
-  shareGist: (content, filename, isPublic) => ipcRenderer.invoke('share-gist', content, filename, isPublic)
+  // Share via Gist (create or update)
+  shareGist: (content, filename, isPublic, existingGistId) => ipcRenderer.invoke('share-gist', content, filename, isPublic, existingGistId),
+  deleteGist: (gistId) => ipcRenderer.invoke('delete-gist', gistId)
 });
