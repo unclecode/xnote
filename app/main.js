@@ -24,6 +24,54 @@ let mainWindow = null;
 let tray = null;
 let isQuitting = false;
 let genAI = null;
+let pendingCliNote = null; // Note to open from CLI
+
+// Single instance lock and CLI command handling
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, argv) => {
+    // Handle CLI commands
+    const openIndex = argv.indexOf('--cli-open');
+    if (openIndex !== -1 && argv[openIndex + 1]) {
+      const noteName = argv[openIndex + 1];
+      openNoteByName(noteName);
+    }
+
+    // Focus window
+    if (mainWindow) {
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+        mainWindow.focus();
+      } else {
+        mainWindow.focus();
+      }
+    }
+  });
+}
+
+// Open note by name (called from CLI via second-instance)
+function openNoteByName(name) {
+  const data = loadData();
+  const note = data.notes?.find(n =>
+    n.name.toLowerCase() === name.toLowerCase()
+  );
+
+  if (note && mainWindow) {
+    // Show window first
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+    mainWindow.focus();
+    // Tell renderer to open this note
+    mainWindow.webContents.send('cli-open-note', note.name);
+  } else if (note) {
+    // Window not ready yet, store for later
+    pendingCliNote = note.name;
+  }
+}
 
 // Default system prompt for AI
 const DEFAULT_SYSTEM_PROMPT = `You are an AI assistant helping to draft and refine notes. Return ONLY the requested content wrapped in <result></result> XML tags. No explanations, greetings, or commentary. Just the content.`;
@@ -592,6 +640,25 @@ app.whenReady().then(() => {
   if (data.aiSettings?.apiKey) {
     initializeGeminiClient(data.aiSettings.apiKey);
   }
+
+  // Check for CLI args on first launch
+  const openIndex = process.argv.indexOf('--cli-open');
+  if (openIndex !== -1 && process.argv[openIndex + 1]) {
+    pendingCliNote = process.argv[openIndex + 1];
+  }
+
+  // Send pending note to renderer once window is ready
+  mainWindow.webContents.on('did-finish-load', () => {
+    if (pendingCliNote) {
+      // Small delay to ensure renderer is fully initialized
+      setTimeout(() => {
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('cli-open-note', pendingCliNote);
+        pendingCliNote = null;
+      }, 500);
+    }
+  });
 });
 
 app.on('window-all-closed', () => {

@@ -90,7 +90,31 @@ case "$1" in
     status)  status_app ;;
     restart) stop_app; sleep 1; start_app ;;
     logs)    [ "$2" = "-f" ] && tail -f "$LOG_FILE" || tail -50 "$LOG_FILE" ;;
+    # Delegate note commands to Node.js CLI
+    create|get|list|open)
+        node "$APP_DIR/bin/xnote-cli.js" "$@"
+        ;;
+    --help|-h|help|"")
+        echo "Usage: xnote <command> [options]"
+        echo ""
+        echo "Service commands:"
+        echo "  start       Start xnote in background"
+        echo "  stop        Stop xnote"
+        echo "  restart     Restart xnote"
+        echo "  status      Check if running"
+        echo "  logs [-f]   View logs"
+        echo ""
+        echo "Note commands:"
+        echo "  create      Create note from stdin"
+        echo "  get         Output note to stdout"
+        echo "  list        List all notes"
+        echo "  open        Open note in app"
+        echo ""
+        echo "Run 'xnote <command> --help' for details"
+        ;;
     *)
-        echo "Usage: xnote <start|stop|restart|status|logs>"
+        echo "Unknown command: $1"
+        echo "Run 'xnote --help' for usage"
+        exit 1
         ;;
 esac

@@ -28,5 +28,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Share via Gist (create or update)
   shareGist: (content, filename, isPublic, existingGistId) => ipcRenderer.invoke('share-gist', content, filename, isPublic, existingGistId),
-  deleteGist: (gistId) => ipcRenderer.invoke('delete-gist', gistId)
+  deleteGist: (gistId) => ipcRenderer.invoke('delete-gist', gistId),
+
+  // CLI integration
+  onCliOpenNote: (callback) => ipcRenderer.on('cli-open-note', (_, noteName) => callback(noteName))
 });

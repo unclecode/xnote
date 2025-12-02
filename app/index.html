@@ -2607,7 +2607,7 @@ Type markdown here, preview on the right updates as you type."
       }
 
       async function switchToTab(newIndex) {
-        const tabs = await getOpenTabs();
+        let tabs = await getOpenTabs();
         const currentIndex = await getActiveTabIndex();
 
         if (newIndex === currentIndex || newIndex < 0 || newIndex >= tabs.length) return;
@@ -2615,15 +2615,20 @@ Type markdown here, preview on the right updates as you type."
         // Auto-save current tab
         await saveCurrentTabContent();
 
+        // Re-fetch tabs after save to ensure fresh data
+        tabs = await getOpenTabs();
+        if (newIndex >= tabs.length) return;
+
         // Update active index
         await setActiveTabIndex(newIndex);
 
-        // Load new tab content
+        // Render tabs BEFORE loading content to show active state immediately
+        await renderTabs();
+
+        // Then load new tab content
         const tab = tabs[newIndex];
         await loadTabContent(tab);
         currentNoteName = tab.noteName || null;
-
-        await renderTabs();
       }
 
       async function createNewTab() {
@@ -2632,21 +2637,25 @@ Type markdown here, preview on the right updates as you type."
         // New tab inherits current mode
         const currentMode = getCurrentMode();
 
-        const tabs = await getOpenTabs();
+        let tabs = await getOpenTabs();
         tabs.push({ tempId: `temp_${Date.now()}`, tempRich: "", tempMd: "", mode: currentMode });
         await setOpenTabs(tabs);
 
-        // Load the new tab
+        // Re-fetch to ensure we have the saved state
+        tabs = await getOpenTabs();
         const newIndex = tabs.length - 1;
         await setActiveTabIndex(newIndex);
+
+        // Render tabs BEFORE loading content
+        await renderTabs();
+
+        // Then load content
         await loadTabContent(tabs[newIndex]);
         currentNoteName = null;
-
-        await renderTabs();
       }
 
       async function closeTab(index) {
-        const tabs = await getOpenTabs();
+        let tabs = await getOpenTabs();
         const tab = tabs[index];
 
         // Warn if unsaved with content
@@ -2664,6 +2673,9 @@ Type markdown here, preview on the right updates as you type."
 
         await setOpenTabs(tabs);
 
+        // Re-fetch to ensure fresh data
+        tabs = await getOpenTabs();
+
         // Adjust active index
         let activeIndex = await getActiveTabIndex();
         if (index <= activeIndex) {
@@ -2672,15 +2684,19 @@ Type markdown here, preview on the right updates as you type."
         activeIndex = Math.min(activeIndex, tabs.length - 1);
         await setActiveTabIndex(activeIndex);
 
+        // Render tabs BEFORE loading content to remove closed tab immediately
+        await renderTabs();
+
+        // Then load content
         await loadTabContent(tabs[activeIndex]);
         currentNoteName = tabs[activeIndex].noteName || null;
-        await renderTabs();
       }
 
       async function openNoteAsTab(noteName) {
         await saveCurrentTabContent();
 
-        const tabs = await getOpenTabs();
+        // Always re-fetch tabs AFTER saving to ensure fresh data
+        let tabs = await getOpenTabs();
 
         // Check if already open - switch to it
         const existingIndex = tabs.findIndex(t => t.noteName === noteName);
@@ -2696,13 +2712,17 @@ Type markdown here, preview on the right updates as you type."
         tabs.push({ noteName, mode: currentMode });
         await setOpenTabs(tabs);
 
-        // Switch to it
+        // Switch to it - re-fetch to ensure we have the saved state
+        tabs = await getOpenTabs();
         const newIndex = tabs.length - 1;
         await setActiveTabIndex(newIndex);
+
+        // Render tabs BEFORE loading content to show the new tab immediately
+        await renderTabs();
+
+        // Then load content
         await loadTabContent(tabs[newIndex]);
         currentNoteName = noteName;
-
-        await renderTabs();
       }
 
       function formatDate(timestamp) {
@@ -4311,6 +4331,12 @@ Answer the user's query. Generate ONLY the content to insert at the <FILL_HERE/>
         // Listen for image chunks from AI generation
         window.electronAPI.onImageChunk((imageData) => {
           receivedGeneratedImage = imageData;
+        });
+
+        // Listen for CLI open-note command
+        window.electronAPI.onCliOpenNote(async (noteName) => {
+          console.log('CLI: Opening note:', noteName);
+          await openNoteAsTab(noteName);
         });
       }
 
