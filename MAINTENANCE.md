@@ -29,7 +29,11 @@ xnote/
 │   ├── package.json              # App dependencies & build config
 │   ├── package-lock.json         # Locked dependencies
 │   ├── bin/
-│   │   └── xnote                 # CLI tool for service management
+│   │   ├── xnote                 # CLI bash shim (service + note commands)
+│   │   ├── xnote-cli.js          # Node.js CLI for note operations
+│   │   └── lib/
+│   │       ├── data.js           # Shared data access module
+│   │       └── ai.js             # Gemini API for title generation
 │   └── assets/
 │       └── trayIconTemplate.png  # macOS menu bar icon
 ├── .github/
@@ -104,13 +108,18 @@ xnote/
   4. Update Homebrew tap (requires token)
 
 #### `app/bin/xnote`
-- **Purpose**: CLI tool for managing xnote as a background service
-- **Features**:
+- **Purpose**: CLI tool for managing xnote as a background service AND note operations
+- **Service Commands**:
   - `xnote start` - Start app in background (detached from terminal)
   - `xnote stop` - Stop the app gracefully
   - `xnote status` - Check if running and show PID
   - `xnote restart` - Restart the app
   - `xnote logs [-f]` - View logs (optionally follow)
+- **Note Commands** (with stdin/stdout piping):
+  - `xnote create [-n name] [--force]` - Create note from stdin
+  - `xnote get <name> [--json|--html]` - Output note content to stdout
+  - `xnote list [--json]` - List all notes
+  - `xnote open <name>` - Open note in running app
 - **Process Management**:
   - PID stored in `~/.xnote/xnote.pid`
   - Logs written to `~/.xnote/xnote.log`
@@ -118,6 +127,24 @@ xnote/
 - **Installation**:
   - Development: `./install-cli.sh` or add to PATH
   - Production: Included in Homebrew from v1.0.2+
+
+#### `app/bin/xnote-cli.js`
+- **Purpose**: Node.js CLI implementation for note operations
+- **Dependencies**: `commander`, `turndown`, `@google/genai`
+- **Features**:
+  - Stdin/stdout piping for Unix-style workflows
+  - AI-powered title generation (Gemini) when name not provided
+  - Opens notes in running app via Electron's single-instance mechanism
+
+#### `app/bin/lib/data.js`
+- **Purpose**: Shared data access module (used by CLI and app)
+- **Functions**: `loadData`, `saveData`, `getNotes`, `getNoteByName`, `createNote`
+- **Atomic writes**: Uses temp file + rename for safe saving
+
+#### `app/bin/lib/ai.js`
+- **Purpose**: Gemini API integration for auto-generating note titles
+- **Model**: `gemini-2.5-flash` for fast title generation
+- **Fallback**: Uses date-based name if API key not configured
 
 #### `install-cli.sh`
 - **Purpose**: Symlink CLI to `/usr/local/bin` for development
@@ -576,6 +603,61 @@ xnote restart
 - Process management via PID file
 - Great for daily use during development
 
+### CLI Pipeline Workflows
+
+The CLI supports Unix-style stdin/stdout piping for powerful workflows:
+
+**Create notes from any source:**
+```bash
+# From file
+cat document.md | xnote create -n "My Document"
+
+# From clipboard
+pbpaste | xnote create -n "From Clipboard"
+
+# With AI-generated title (uses Gemini)
+cat meeting-notes.txt | xnote create
+
+# Overwrite existing note
+echo "Updated content" | xnote create -n "Existing Note" --force
+```
+
+**Export notes anywhere:**
+```bash
+# To file
+xnote get "My Note" > backup.md
+
+# To clipboard
+xnote get "My Note" | pbcopy
+
+# As JSON
+xnote get "My Note" --json > note.json
+
+# List all notes
+xnote list
+xnote list --json
+```
+
+**Open notes in app:**
+```bash
+# Opens note in running app (or starts app)
+xnote open "My Note"
+```
+
+**Combine with other tools:**
+```bash
+# Search notes
+xnote list --json | jq '.[] | select(.name | contains("meeting"))'
+
+# Backup all notes
+for note in $(xnote list --json | jq -r '.[].name'); do
+  xnote get "$note" > "backup/$note.md"
+done
+
+# Create note from web content
+curl -s https://example.com | xnote create -n "Web Page"
+```
+
 ### Install CLI for Development
 
 **Option 1: System-wide (requires sudo)**
@@ -792,6 +874,11 @@ xnote logs -f    # Check logs
 | Data location | `~/.xnote/data.json` |
 | Logs (CLI) | `~/.xnote/xnote.log` |
 | PID file (CLI) | `~/.xnote/xnote.pid` |
+| **Note CLI Commands** | |
+| Create note (stdin) | `echo "text" \| xnote create -n "Name"` |
+| Get note (stdout) | `xnote get "Name" > file.md` |
+| List notes | `xnote list [--json]` |
+| Open note in app | `xnote open "Name"` |
 | **AI Shortcuts** | |
 | Inline AI | `Cmd+Y` |
 | Chat Sidebar | `Cmd+Shift+Y` |
@@ -801,6 +888,6 @@ xnote logs -f    # Check logs
 
 ---
 
-**Last Updated**: 2025-11-29
-**Current Version**: 1.0.2+ (with AI features, multi-tab, streaming)
+**Last Updated**: 2025-12-02
+**Current Version**: 1.0.2+ (with AI features, multi-tab, streaming, CLI pipeline)
 **Maintainer**: unclecode
